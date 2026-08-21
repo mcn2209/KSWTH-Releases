@@ -30,6 +30,7 @@ textarea{width:100%;min-height:110px;resize:vertical;background:#0c2336;color:wh
 <textarea id="workText" placeholder="Codex에 전달할 작업 내용을 입력하세요."></textarea>
 <div class="workButtons"><button class="send" onclick="sendWork()">텍스트 전송</button><button class="attach" onclick="attachWork()">파일·사진</button></div>
 <button class="check" onclick="checkResponses()">새 답변 확인</button>
+<button class="attach" onclick="syncHistory()">PC 대화 이력 동기화</button>
 <div id="responses" class="responses"></div></section>
 <div class="version">앱 <span id="appVer">-</span> · UI <span id="uiVer">-</span><br>서명 검증된 UI만 적용</div>
 </main>
@@ -39,8 +40,12 @@ function pcRefresh(){Kswth.pcRefresh(token())} function mobileUiRefresh(){window
 function sendWork(){Kswth.saveAuthToken(token());Kswth.sendWork(document.getElementById('workText').value)}
 function attachWork(){Kswth.saveAuthToken(token());Kswth.chooseWorkFile(document.getElementById('workText').value)}
 function checkResponses(){Kswth.saveAuthToken(token());Kswth.checkWorkResponses()}
+function syncHistory(){Kswth.saveAuthToken(token());document.getElementById('responses').innerHTML='';Kswth.syncWorkHistory()}
 window.kswthWorkSent=function(){document.getElementById('workText').value=''}
 window.kswthWorkResponse=function(taskId,text){const box=document.createElement('div');box.className='response';const title=document.createElement('b');title.textContent='답변 · '+taskId;box.appendChild(title);box.appendChild(document.createElement('br'));box.appendChild(document.createTextNode(text));document.getElementById('responses').prepend(box)}
+window.kswthHistoryItem=function(taskId,request,response,status){const box=document.createElement('div');box.className='response';const title=document.createElement('b');title.textContent='나 · '+taskId+' ['+status+']';box.appendChild(title);box.appendChild(document.createElement('br'));box.appendChild(document.createTextNode(request));if(response){box.appendChild(document.createElement('hr'));box.appendChild(document.createTextNode('Codex\n'+response))}document.getElementById('responses').appendChild(box)}
+window.kswthHistoryComplete=function(count){window.kswthStatus('PC 대화 이력 '+count+'건 동기화 완료',true)}
+window.kswthResultFile=function(taskId,url,name){const box=document.createElement('div');box.className='response';const title=document.createElement('b');title.textContent='결과 파일 · '+taskId;box.appendChild(title);const btn=document.createElement('button');btn.className='app';btn.textContent=name+' 다운로드';btn.onclick=function(){Kswth.downloadResult(url,name)};box.appendChild(btn);document.getElementById('responses').prepend(box)}
 window.kswthStatus=function(text,ok){const el=document.getElementById('status');el.textContent=text;el.className='status '+(ok?'ok':'fail')}
 document.getElementById('appVer').textContent=Kswth.appVersion();document.getElementById('uiVer').textContent=Kswth.uiVersion();
 if(Kswth.hasAuthToken())document.getElementById('token').placeholder='인증키 저장됨 (변경할 때만 입력)';
