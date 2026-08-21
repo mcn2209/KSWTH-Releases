@@ -12,6 +12,10 @@ input{width:100%;height:58px;background:#0c2336;color:white;border:1px solid #17
 button{width:100%;height:62px;border:0;color:white;font-size:18px;font-weight:700;margin-top:12px}
 .pc{background:#147eb4}.mobile{background:#007e70}.app{background:#5b32a0}.status{min-height:92px;padding:24px 8px 8px;color:#9bb5c8;white-space:pre-line}
 .ok{color:#43e0aa}.fail{color:#ff7082}.version{color:#5b798f;font-size:12px;line-height:1.8;margin-top:10px}
+.work{margin-top:24px;padding-top:18px;border-top:1px solid #173f5c;text-align:left}.work h2{font-size:18px;color:#69e0ff;margin:0 0 10px}
+textarea{width:100%;min-height:110px;resize:vertical;background:#0c2336;color:white;border:1px solid #173f5c;padding:14px;font-size:15px}
+.workButtons{display:flex;gap:8px}.workButtons button{height:52px;font-size:15px}.send{background:#147eb4}.attach{background:#42566a}.check{background:#007e70}
+.responses{margin-top:14px}.response{background:#0b1d2d;border:1px solid #173f5c;border-radius:6px;padding:12px;margin-top:8px;white-space:pre-wrap;word-break:break-word}.response b{color:#43e0aa}
 </style>
 </head>
 <body><main class="wrap">
@@ -22,11 +26,21 @@ button{width:100%;height:62px;border:0;color:white;font-size:18px;font-weight:70
 <button class="mobile" onclick="mobileUiRefresh()">모바일 UI 갱신</button>
 <button class="app" onclick="appUpdate()">네이티브 앱 갱신</button>
 <div id="status" class="status">모바일 UI 갱신에는 인증키가 필요하지 않습니다.</div>
+<section class="work"><h2>AI 작업 전송함</h2>
+<textarea id="workText" placeholder="Codex에 전달할 작업 내용을 입력하세요."></textarea>
+<div class="workButtons"><button class="send" onclick="sendWork()">텍스트 전송</button><button class="attach" onclick="attachWork()">파일·사진</button></div>
+<button class="check" onclick="checkResponses()">새 답변 확인</button>
+<div id="responses" class="responses"></div></section>
 <div class="version">앱 <span id="appVer">-</span> · UI <span id="uiVer">-</span><br>서명 검증된 UI만 적용</div>
 </main>
 <script>
 function token(){return document.getElementById('token').value.trim()}
 function pcRefresh(){Kswth.pcRefresh(token())} function mobileUiRefresh(){window.kswthStatus('인증키 없이 모바일 UI 확인 중…',true);Kswth.mobileUiRefresh()} function appUpdate(){Kswth.appUpdate()}
+function sendWork(){Kswth.saveAuthToken(token());Kswth.sendWork(document.getElementById('workText').value)}
+function attachWork(){Kswth.saveAuthToken(token());Kswth.chooseWorkFile(document.getElementById('workText').value)}
+function checkResponses(){Kswth.saveAuthToken(token());Kswth.checkWorkResponses()}
+window.kswthWorkSent=function(){document.getElementById('workText').value=''}
+window.kswthWorkResponse=function(taskId,text){const box=document.createElement('div');box.className='response';const title=document.createElement('b');title.textContent='답변 · '+taskId;box.appendChild(title);box.appendChild(document.createElement('br'));box.appendChild(document.createTextNode(text));document.getElementById('responses').prepend(box)}
 window.kswthStatus=function(text,ok){const el=document.getElementById('status');el.textContent=text;el.className='status '+(ok?'ok':'fail')}
 document.getElementById('appVer').textContent=Kswth.appVersion();document.getElementById('uiVer').textContent=Kswth.uiVersion();
 if(Kswth.hasAuthToken())document.getElementById('token').placeholder='인증키 저장됨 (변경할 때만 입력)';
