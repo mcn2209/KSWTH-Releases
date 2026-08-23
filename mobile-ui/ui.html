@@ -73,5 +73,5 @@ window.kswthWorkResponse=function(id,text){let b=document.createElement('div');b
 window.kswthHistoryItem=function(id,req,res,status){let b=document.createElement('div');b.className='response';b.textContent='나 · '+id+' ['+status+']\n'+req+(res?'\n\nCodex\n'+res:'');el('responses').appendChild(b)};
 window.kswthHistoryComplete=function(c){window.kswthStatus('대화 이력 '+c+'건 동기화',true)};
 window.kswthResultFile=function(id,url,name){let b=document.createElement('button');b.textContent=name+' 다운로드';b.onclick=()=>Kswth.downloadResult(url,name);el('responses').prepend(b)};
-el('appVer').textContent=Kswth.appVersion();el('uiVer').textContent=Kswth.uiVersion();if(Kswth.hasAuthToken()){el('token').placeholder='인증키 저장됨';setTimeout(function(){snapshot(false)},500);setInterval(function(){if(document.visibilityState==='visible'&&!syncActive)snapshot(true)},5000)}
+el('appVer').textContent=Kswth.appVersion();el('uiVer').textContent=Kswth.uiVersion();if(Kswth.hasAuthToken()){el('token').placeholder='인증키 저장됨';setTimeout(function(){snapshot(false)},500);setInterval(function(){if(document.visibilityState==='visible'&&!syncActive)snapshot(true)},30000)}
 </script></body></html>
