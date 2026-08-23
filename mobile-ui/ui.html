@@ -8,7 +8,7 @@ body{background:radial-gradient(circle at 50% -10%,#10304a 0,#091827 28%,#07111c
 header{box-shadow:0 10px 26px #020810a8;backdrop-filter:blur(12px)}
 .brand h1{letter-spacing:.6px;text-shadow:0 0 14px #2ecfff99,0 2px 0 #021019}
 .online{display:inline-flex;align-items:center;gap:5px;padding:5px 9px;border:1px solid #54313d;border-radius:14px;background:linear-gradient(145deg,#251621,#140d15);box-shadow:inset 0 1px 0 #ffffff12}
-.online.ok{border-color:#17684f;background:linear-gradient(145deg,#0d3a31,#08251f);box-shadow:0 0 14px #36dca63d,inset 0 1px 0 #ffffff16;animation:statusGlow 2.2s ease-in-out infinite}
+.online.ok{border-color:#17684f;background:linear-gradient(145deg,#0d3a31,#08251f);box-shadow:0 0 14px #36dca63d,inset 0 1px 0 #ffffff16;animation:statusGlow 2.2s ease-in-out infinite}.online.stale{color:#ffbe68;border-color:#805b22;background:linear-gradient(145deg,#473115,#2a1d0e);box-shadow:0 0 14px #ffb13b38,inset 0 1px 0 #ffffff16}
 .hero,.card{position:relative;overflow:hidden;background:linear-gradient(145deg,#102b40 0,#0a1e2e 48%,#081722 100%);border-color:#1b4b67;box-shadow:0 13px 28px #02070eb8,inset 0 1px 0 #ffffff0f,inset 0 -1px 0 #0008}
 .hero:before,.card:before{content:"";position:absolute;left:1px;right:1px;top:1px;height:34%;border-radius:13px 13px 50% 50%;background:linear-gradient(180deg,#ffffff0a,transparent);pointer-events:none}
 .sectionTitle h2{display:flex;align-items:center;gap:8px;text-shadow:0 0 12px #37c7ff48}.sectionTitle h2:before{content:"◆";font-size:10px;color:#48dfff;filter:drop-shadow(0 0 5px #32cbff)}
@@ -73,5 +73,5 @@ window.kswthWorkResponse=function(id,text){let b=document.createElement('div');b
 window.kswthHistoryItem=function(id,req,res,status){let b=document.createElement('div');b.className='response';b.textContent='나 · '+id+' ['+status+']\n'+req+(res?'\n\nCodex\n'+res:'');el('responses').appendChild(b)};
 window.kswthHistoryComplete=function(c){window.kswthStatus('대화 이력 '+c+'건 동기화',true)};
 window.kswthResultFile=function(id,url,name){let b=document.createElement('button');b.textContent=name+' 다운로드';b.onclick=()=>Kswth.downloadResult(url,name);el('responses').prepend(b)};
-el('appVer').textContent=Kswth.appVersion();el('uiVer').textContent=Kswth.uiVersion();if(typeof Kswth.cachedMtsSnapshot==='function'){try{var cached=Kswth.cachedMtsSnapshot();if(cached){window.kswthMtsResult(cached);el('updated').textContent+=' · 저장 데이터'}}catch(ignore){}}if(Kswth.hasAuthToken()){el('token').placeholder='인증키 저장됨';setTimeout(function(){snapshot(false)},500);scheduleAutoSync()}
+el('appVer').textContent=Kswth.appVersion();el('uiVer').textContent=Kswth.uiVersion();if(typeof Kswth.cachedMtsSnapshot==='function'){try{var cached=Kswth.cachedMtsSnapshot();if(cached){window.kswthMtsResult(cached);el('online').textContent='● 저장 데이터';el('online').className='online stale';el('updated').textContent+=' · 재연결 중';el('homeRelay').textContent='데이터 지연';el('homeRelay').className='warning'}}catch(ignore){}}if(Kswth.hasAuthToken()){el('token').placeholder='인증키 저장됨';setTimeout(function(){snapshot(false)},500);scheduleAutoSync()}
 </script></body></html>
