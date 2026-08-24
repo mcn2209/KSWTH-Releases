@@ -124,10 +124,18 @@ var basePerfAccountRender=renderDomesticAccount;renderDomesticAccount=function()
 var runtimeRefreshQueued=false,runtimeRefreshRetry=null;
 function dispatchRuntimeRefresh(){
     clearTimeout(runtimeRefreshRetry);
+    var failedState=/통신 실패|응답.*없|시간 초과|요청 실패/.test((el('status').textContent||''));
+    if(syncActive&&failedState){syncActive=false;syncSilent=false;clearInterval(syncTimer)}
     if(syncActive){runtimeRefreshQueued=true;syncPaint(10,'자동 동기화 완료 후 PC 런타임 갱신 예약','');runtimeRefreshRetry=setTimeout(dispatchRuntimeRefresh,1000);return}
     runtimeRefreshQueued=false;startSyncProgress(false,{mode:'pc',timeoutMs:120000,startLabel:'PC 런타임 갱신 1/3 · 중계 전송 중'});syncPaint(25,'PC 런타임 갱신 1/3 · 중계 전송 중','');Kswth.mtsCommand('runtime_refresh',false)
 }
 pcRefresh=function(){dispatchRuntimeRefresh()};
+var pcRefreshTouchAt=0;
+document.querySelectorAll('button[onclick="pcRefresh()"],button.pc').forEach(function(button){
+    button.onclick=null;button.style.touchAction='manipulation';
+    var invoke=function(event){if(event){event.preventDefault();event.stopPropagation()}var now=Date.now();if(now-pcRefreshTouchAt<700)return;pcRefreshTouchAt=now;dispatchRuntimeRefresh()};
+    button.addEventListener('click',invoke);button.addEventListener('touchend',invoke,{passive:false});
+});
 var baseRuntimeProgressStatus=window.kswthStatus;
 window.kswthStatus=function(t,ok){
     baseRuntimeProgressStatus(t,ok);
