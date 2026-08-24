@@ -55,6 +55,16 @@ var performanceCard=document.createElement('div');performanceCard.className='car
 var riskCard=document.createElement('div');riskCard.className='card settings';riskCard.innerHTML='<div class="sectionTitle"><h2>코인 위험설정</h2><span class="badge">엔진 정지 시 변경</span></div><div class="grid"><label class="kv"><span>배분율 %</span><input id="riskAllocation" type="number" min="1" max="100"></label><label class="kv"><span>최대 포지션</span><input id="riskMaxPositions" type="number" min="1" max="5"></label><label class="kv"><span>레버리지</span><input id="riskLeverage" type="number" min="1" max="10"></label><label class="kv"><span>시드 USDT</span><input id="riskSeedAmount" type="number" min="0"></label><label class="kv"><span>손절 %</span><input id="riskStop" type="number" min="0.1" step="0.1"></label><label class="kv"><span>익절 1 %</span><input id="riskTp1" type="number" min="0.1" step="0.1"></label><label class="kv"><span>익절 2 %</span><input id="riskTp2" type="number" min="0.1" step="0.1"></label><label class="kv"><span>익절 3 %</span><input id="riskTp3" type="number" min="0.1" step="0.1"></label><label class="kv"><span>최대 보유 봉</span><input id="riskMaxHold" type="number" min="1"></label></div><label class="hint"><input id="riskSeedLimit" type="checkbox"> 시드 제한 사용</label><label class="hint"><input id="riskProfitProtection" type="checkbox"> 수익금 보호 사용</label><button onclick="saveRiskSettings()">위험설정 검증·저장</button><div class="dangerNote">API Key/Secret은 휴대폰으로 전송하거나 변경하지 않습니다.</div>';el('system').appendChild(riskCard);var entryOrderCard=document.createElement('div');entryOrderCard.className='card';entryOrderCard.innerHTML='<div class="sectionTitle"><h2>코인 진입 대기 주문</h2><span id="coinEntryCount" class="badge">0건</span></div><div id="coinEntryOrders" class="tableWrap empty">데이터 없음</div>';var positionCard=el('positions').closest('.card');coinPage.insertBefore(performanceCard,positionCard);coinPage.insertBefore(entryOrderCard,positionCard);
 var logCard=document.createElement('div');logCard.className='card';logCard.innerHTML='<div class="sectionTitle"><h2>통합 알림·로그</h2><span id="alertCount" class="badge">0건</span></div><div id="alertList" class="response">중요 알림 없음</div><div class="sectionTitle" style="margin-top:14px"><h2>최근 로그</h2></div><div id="logList" class="response">로그 동기화 전</div>';activity.appendChild(logCard);
 var syncTimer = null, syncHideTimer = null, syncActive = false, syncSilent = false, syncStarted = 0, syncTotalTimeoutMs = 120000;
+function syncPaint(percent,label,state){
+    var box=el('syncProgress'),fill=el('syncProgressFill'),pct=el('syncProgressPct'),text=el('syncProgressLabel');
+    if(!box||!fill||!pct||!text)return;
+    var value=Math.max(0,Math.min(100,Number(percent)||0));
+    box.style.display='block';
+    box.className='syncProgress'+(state?' '+state:'');
+    fill.style.width=value.toFixed(1)+'%';
+    pct.textContent=Math.round(value)+'%';
+    text.textContent=label||'처리 중';
+}
 function syncFormatRemaining(ms){
     var remain = Math.max(0, Math.floor(ms/1000));
     return remain + '초';
