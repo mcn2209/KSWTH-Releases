@@ -190,6 +190,173 @@ el('appVer').textContent=Kswth.appVersion();el('uiVer').textContent=Kswth.uiVers
  var prior=window.kswthMtsResult;window.kswthMtsResult=function(raw){prior(raw);try{var s=(JSON.parse(raw).snapshot||{}).spot||{},cfg=s.settings||{};el('spotBadge').textContent=s.running?'● 실행':'정지';el('spotBadge').className='badge '+(s.running?'run':'');el('spotMode').textContent=s.mode||'-';el('spotConnected').textContent=s.connected?'연결':'미연결';el('spotStatus').textContent=s.status||'-';el('spotPositionCount').textContent=String((s.positions||[]).length)+'종목';table('spotPositions',s.positions||[]);table('spotPending',s.pending_orders||[]);table('spotCandidates',s.candidates||[]);el('spotSeed').value=cfg.fixed_seed_krw??'';el('spotAllocation').value=cfg.allocation_pct??'';el('spotMaxPositions').value=cfg.max_positions??'';el('spotBaseBars').value=cfg.base_search_bars??'';el('spotAutoStart').checked=!!cfg.auto_start_enabled;el('spotSave').disabled=!!s.running}catch(ignore){}};
 })();
 </script><style>
+.mts-chart-panel {
+  min-height: 230px;
+  display: grid;
+  place-items: center;
+  padding: 14px;
+  border: 1px dashed #28617d;
+  border-radius: 9px;
+  color: #7894a8;
+  text-align: center;
+}
+.mts-chart-panel.has-image {
+  display: block;
+  padding: 7px;
+  cursor: zoom-in;
+}
+.mts-chart-panel.has-image img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 68vh;
+  object-fit: contain;
+  border-radius: 7px;
+  background: #07131d;
+}
+.mts-chart-panel.has-image small {
+  display: block;
+  padding: 9px 4px 3px;
+  color: #9bb6c6;
+}
+.mts-chart-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10020;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: max(58px, env(safe-area-inset-top)) 10px max(14px, env(safe-area-inset-bottom));
+  background: rgba(1, 8, 14, .96);
+}
+.mts-chart-modal.show { display: flex; }
+.mts-chart-modal img {
+  display: block;
+  max-width: 100%;
+  max-height: calc(100vh - 76px);
+  object-fit: contain;
+  touch-action: pinch-zoom;
+}
+.mts-chart-close {
+  position: absolute;
+  top: max(10px, env(safe-area-inset-top));
+  right: 10px;
+  z-index: 1;
+  width: auto;
+  height: 40px;
+  margin: 0;
+  padding: 0 14px;
+  border-radius: 20px;
+  background: #17394d;
+  color: #effaff;
+}
+body.mts-chart-open { overflow: hidden; }
+
+</style><script>
+(function () {
+  'use strict';
+
+  var domesticPage = document.getElementById('domestic');
+  var coinPage = document.getElementById('coin');
+  if (!domesticPage || !coinPage) return;
+
+  function chartCard(id, title, text) {
+    var card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = '<div class="sectionTitle"><h2>' + title + '</h2></div>' +
+      '<div id="' + id + '" class="mts-chart-panel">' + text + '</div>';
+    return card;
+  }
+
+  var stockCard = chartCard('stockChartPanel', '국내주식 차트', '잔고·전략 행을 선택하면 차트를 표시합니다.');
+  var coinCard = chartCard('coinChartPanel', '코인선물 차트', '포지션 행을 선택하면 차트를 표시합니다.');
+  var stockRefresh = document.getElementById('stockRefreshButton');
+  var coinRefresh = document.getElementById('coinRefreshButton');
+  domesticPage.insertBefore(stockCard, stockRefresh || null);
+  coinPage.insertBefore(coinCard, coinRefresh || null);
+
+  var modal = document.createElement('div');
+  modal.id = 'mtsChartModal';
+  modal.className = 'mts-chart-modal';
+  modal.setAttribute('aria-hidden', 'true');
+  modal.innerHTML = '<button id="mtsChartClose" class="mts-chart-close" type="button">닫기 ×</button>' +
+    '<img id="mtsChartModalImage" alt="확대 차트">';
+  document.body.appendChild(modal);
+
+  var pendingScope = '';
+  var scopeByTable = {
+    stockBalances: 'stock',
+    stockStrategies: 'stock',
+    stockOrders: 'stock',
+    positions: 'coin',
+    orders: 'coin',
+    coinEntryOrders: 'coin',
+    coinRecentOrders: 'coin'
+  };
+
+  function panelFor(scope) {
+    return document.getElementById(scope === 'stock' ? 'stockChartPanel' : 'coinChartPanel');
+  }
+  function closeChart() {
+    modal.classList.remove('show');
+    modal.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('mts-chart-open');
+  }
+  function openChart(url, name) {
+    var image = document.getElementById('mtsChartModalImage');
+    image.src = url;
+    image.alt = name || '확대 차트';
+    modal.classList.add('show');
+    modal.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('mts-chart-open');
+  }
+  function showChart(scope, url, name) {
+    var panel = panelFor(scope);
+    if (!panel || !url) return;
+    panel.className = 'mts-chart-panel has-image';
+    panel.textContent = '';
+    var image = document.createElement('img');
+    image.src = url;
+    image.alt = name || (scope === 'stock' ? '국내주식 차트' : '코인선물 차트');
+    image.addEventListener('click', function () { openChart(url, name); });
+    var hint = document.createElement('small');
+    hint.textContent = '차트를 터치하면 앱 안에서 확대됩니다.';
+    panel.appendChild(image);
+    panel.appendChild(hint);
+  }
+
+  document.addEventListener('click', function (event) {
+    var row = event.target.closest && event.target.closest('.tableWrap tbody tr');
+    if (!row) return;
+    var tableWrap = row.closest('.tableWrap');
+    var scope = tableWrap && scopeByTable[tableWrap.id];
+    if (!scope) return;
+    pendingScope = scope;
+    var panel = panelFor(scope);
+    if (panel) {
+      panel.className = 'mts-chart-panel';
+      panel.textContent = '차트 요청 중…';
+    }
+  }, true);
+
+  document.getElementById('mtsChartClose').addEventListener('click', closeChart);
+  modal.addEventListener('click', function (event) { if (event.target === modal) closeChart(); });
+  document.addEventListener('keydown', function (event) { if (event.key === 'Escape') closeChart(); });
+
+  var priorResult = window.kswthMtsResult;
+  window.kswthMtsResult = function (raw) {
+    priorResult(raw);
+    try {
+      var result = JSON.parse(raw);
+      if (result.chart_url && pendingScope) {
+        showChart(pendingScope, result.chart_url, result.chart_name || 'MTS 차트');
+        pendingScope = '';
+      }
+    } catch (ignore) {}
+  };
+})();
+
+</script><style>
 :root {
   --spot-gap: 12px;
   --spot-pad: 14px;
