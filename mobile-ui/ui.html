@@ -255,6 +255,14 @@ el('appVer').textContent=Kswth.appVersion();el('uiVer').textContent=Kswth.uiVers
 .spot-table th { position: sticky; top: 0; z-index: 1; }
 .spot-table td { height: var(--spot-row-height); max-width: 170px; overflow: hidden; text-overflow: ellipsis; }
 .spot-chart { min-height: var(--spot-chart-height); display: grid; place-items: center; border: 1px dashed #28617d; border-radius: 9px; color: #7894a8; padding: 16px; text-align: center; }
+.spot-chart.has-image { display: block; padding: 7px; cursor: zoom-in; }
+.spot-chart.has-image img { display: block; width: 100%; height: auto; max-height: 68vh; object-fit: contain; border-radius: 7px; background: #07131d; }
+.spot-chart.has-image small { display: block; padding: 9px 4px 3px; color: #9bb6c6; }
+.spot-chart-modal { position: fixed; inset: 0; z-index: 10000; display: none; align-items: center; justify-content: center; padding: max(58px, env(safe-area-inset-top)) 10px max(14px, env(safe-area-inset-bottom)); background: rgba(1, 8, 14, .96); }
+.spot-chart-modal.show { display: flex; }
+.spot-chart-modal img { display: block; max-width: 100%; max-height: calc(100vh - 76px); object-fit: contain; touch-action: pinch-zoom; }
+.spot-chart-close { position: absolute; top: max(10px, env(safe-area-inset-top)); right: 10px; z-index: 1; width: auto; height: 40px; margin: 0; padding: 0 14px; border-radius: 20px; background: #17394d; color: #effaff; }
+body.spot-modal-open { overflow: hidden; }
 .spot-log { max-height: 190px; overflow: auto; }
 .spot-error-count { color: var(--spot-bad); }
 .nav button[data-page="spot"]:before {
@@ -374,6 +382,10 @@ el('appVer').textContent=Kswth.appVersion();el('uiVer').textContent=Kswth.uiVers
       <aside class="spot-right">
         <div class="card spot-card"><div class="sectionTitle"><h2>완성 4시간봉 TAIL 차트</h2></div><div id="spotChartV2" class="spot-chart">후보·주문·보유종목 행을 선택하면 확대 가능한 차트를 받습니다.</div></div>
       </aside>
+    </div>
+    <div id="spotChartModal" class="spot-chart-modal" aria-hidden="true">
+      <button id="spotChartClose" class="spot-chart-close" type="button" aria-label="차트 확대 닫기">닫기 ×</button>
+      <img id="spotChartModalImage" alt="확대된 완성 4시간봉 TAIL 차트">
     </div>`;
 
   var snapshot = {};
@@ -415,6 +427,37 @@ el('appVer').textContent=Kswth.appVersion();el('uiVer').textContent=Kswth.uiVers
     var date=new Date(stamp); return isNaN(date.getTime())||Date.now()-date.getTime()>15000;
   }
   function input(id, value, checkbox) { var n=node(id); if(!n)return; if(checkbox)n.checked=!!value; else n.value=value===undefined||value===null?'':value; }
+
+  function closeSpotChart() {
+    var modal=node('spotChartModal');
+    if(!modal)return;
+    modal.classList.remove('show');
+    modal.setAttribute('aria-hidden','true');
+    document.body.classList.remove('spot-modal-open');
+  }
+  function openSpotChart(url, name) {
+    var modal=node('spotChartModal'), image=node('spotChartModalImage');
+    if(!modal||!image||!url)return;
+    image.src=url;
+    image.alt=name||'확대된 완성 4시간봉 TAIL 차트';
+    modal.classList.add('show');
+    modal.setAttribute('aria-hidden','false');
+    document.body.classList.add('spot-modal-open');
+  }
+  function showSpotChart(url, name) {
+    var box=node('spotChartV2');
+    if(!box||!url)return;
+    box.className='spot-chart has-image';
+    box.textContent='';
+    var image=document.createElement('img');
+    image.src=url;
+    image.alt=name||'완성 4시간봉 TAIL 차트';
+    image.addEventListener('click',function(){openSpotChart(url,name);});
+    var hint=document.createElement('small');
+    hint.textContent='차트를 터치하면 앱 안에서 확대됩니다.';
+    box.appendChild(image);
+    box.appendChild(hint);
+  }
 
   function renderTable() {
     var rows=snapshot[activeTable]||[], schema=schemas[activeTable]||[], box=node('spotTableV2');
@@ -477,10 +520,13 @@ el('appVer').textContent=Kswth.appVersion();el('uiVer').textContent=Kswth.uiVers
   node('spotStartV2').onclick=function(){Kswth.mtsCommand('spot_start',false);};
   node('spotStopV2').onclick=function(){Kswth.mtsCommand('spot_stop',false);};
   node('spotPrevMonth').onclick=function(){shiftMonth(-1);};node('spotNextMonth').onclick=function(){shiftMonth(1);};
+  node('spotChartClose').onclick=closeSpotChart;
+  node('spotChartModal').onclick=function(event){if(event.target===event.currentTarget)closeSpotChart();};
+  document.addEventListener('keydown',function(event){if(event.key==='Escape')closeSpotChart();});
   page.querySelectorAll('[data-spot-table]').forEach(function(button){button.onclick=function(){activeTable=button.dataset.spotTable;page.querySelectorAll('[data-spot-table]').forEach(function(item){item.classList.toggle('active',item===button);});renderTable();};});
 
   var priorResult=window.kswthMtsResult;
-  window.kswthMtsResult=function(raw){priorResult(raw);try{var result=JSON.parse(raw),root=result.snapshot||{};if(root.spot)renderSpot(root.spot,root.server_time);if(result.chart_url)setText('spotChartV2',(result.chart_name||'4H TAIL 차트')+' · 확대 화면으로 전송 완료');}catch(ignore){}finally{setTimeout(dispatchSpotChart,50);}};
+  window.kswthMtsResult=function(raw){priorResult(raw);try{var result=JSON.parse(raw),root=result.snapshot||{};if(root.spot)renderSpot(root.spot,root.server_time);if(result.chart_url)showSpotChart(result.chart_url,result.chart_name||'4H TAIL 차트');}catch(ignore){}finally{setTimeout(dispatchSpotChart,50);}};
   if(location.hash==='#spot'||location.search.indexOf('page=spot')>=0){var navButton=document.querySelector('[data-page="spot"]');showPage('spot',navButton);setTimeout(function(){window.scrollTo(0,0);},20);}
 })();
 
