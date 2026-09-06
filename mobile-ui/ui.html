@@ -418,7 +418,7 @@ el('appVer').textContent=Kswth.appVersion();el('uiVer').textContent=Kswth.uiVers
 
   function renderTable() {
     var rows=snapshot[activeTable]||[], schema=schemas[activeTable]||[], box=node('spotTableV2');
-    if(!rows.length){box.className='spot-table empty';box.textContent='데이터 없음';return;}
+    if(!rows.length){box.className='spot-table empty';box.textContent=activeTable==='positions'&&!snapshot.exchange_balance_fresh?'거래소 잔고 연결 끊김 · 마지막 동기화 '+kst(snapshot.exchange_balance_sync_at):'데이터 없음';return;}
     box.className='spot-table';
     box.innerHTML='<table><thead><tr>'+schema.map(function(col){return '<th>'+escapeHtml(col[0])+'</th>';}).join('')+'</tr></thead><tbody>'+rows.map(function(row,index){return '<tr data-index="'+index+'">'+schema.map(function(col){var raw=valueOf(row,col[1]);return '<td title="'+escapeHtml(String(raw))+'">'+escapeHtml(compact(raw))+'</td>';}).join('')+'</tr>';}).join('')+'</tbody></table>';
     box.querySelectorAll('tbody tr').forEach(function(rowNode){rowNode.onclick=function(){var row=rows[Number(rowNode.dataset.index)],market=marketOf(row);if(!market)return;pendingSpotChart={market:market,row:row};setText('spotChartV2',market+' · 완성 4시간봉 차트 준비 중…');clearTimeout(autoSyncTimer);dispatchSpotChart();};});
