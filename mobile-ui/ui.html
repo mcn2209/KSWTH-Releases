@@ -321,18 +321,6 @@ el('appVer').textContent=Kswth.appVersion();el('uiVer').textContent=Kswth.uiVers
             <label class="spot-setting"><span>고정 시드 KRW</span><input id="spotSeedV2" type="number" min="0"></label>
             <label class="spot-setting"><span>종목당 배분 %</span><input id="spotAllocationV2" type="number" min="0.01" max="100" step="0.01"></label>
             <label class="spot-setting"><span>최대 보유 종목</span><input id="spotMaxPositionsV2" type="number" min="1"></label>
-            <label class="spot-setting"><span>베이스 탐색 봉</span><input id="spotBaseBarsV2" type="number" min="1"></label>
-            <label class="spot-setting"><span>기준봉 최소상승률 %</span><input id="spotBaseRise" type="number" step="0.01" title="PC 통합 런타임의 저장값"></label>
-            <label class="spot-setting"><span>최소 구조거리 %</span><input id="spotStructureDistance" type="number" step="0.01"></label>
-            <label class="spot-setting check"><input id="spotTelegram" type="checkbox">텔레그램</label>
-            <label class="spot-setting check"><input id="spotCharts" type="checkbox">차트 전송</label>
-            <label class="spot-setting check"><input id="spotLimitRefresh" type="checkbox">지정가 갱신</label>
-            <label class="spot-setting"><span>지정가 갱신 초</span><input id="spotLimitSeconds" type="number" min="1"></label>
-            <label class="spot-setting check"><input id="spotMarketFallback" type="checkbox">시장가 전환</label>
-            <label class="spot-setting"><span>시장가 전환 초</span><input id="spotMarketSeconds" type="number" min="1"></label>
-            <label class="spot-setting"><span>보호매도 유형</span><select id="spotExitType"><option>LIMIT</option><option>MARKET</option></select></label>
-            <label class="spot-setting"><span>보호 지정가 틱</span><input id="spotExitTicks" type="number" min="0"></label>
-            <label class="spot-setting"><span>정지 정책</span><select id="spotStopPolicy"><option>PRESERVE</option><option>STOP_SERVICE</option></select></label>
           </div>
           <button id="spotSaveV2" type="button">설정 저장</button>
           <div class="actions"><button id="spotStartV2" type="button">엔진 시작</button><button id="spotStopV2" class="stop" type="button">엔진 정지</button></div>
@@ -468,7 +456,7 @@ el('appVer').textContent=Kswth.appVersion();el('uiVer').textContent=Kswth.uiVers
     renderCalendar();renderTable();
   }
   function saveSettings() {
-    var data={fixed_seed_krw:Number(node('spotSeedV2').value),allocation_pct:Number(node('spotAllocationV2').value),max_positions:Number(node('spotMaxPositionsV2').value),base_search_bars:Number(node('spotBaseBarsV2').value),base_rise_pct:Number(node('spotBaseRise').value),min_initial_structure_distance_pct:node('spotStructureDistance').value===''?null:Number(node('spotStructureDistance').value),telegram_enabled:node('spotTelegram').checked,chart_notifications_enabled:node('spotCharts').checked,limit_refresh_enabled:node('spotLimitRefresh').checked,limit_refresh_seconds:Number(node('spotLimitSeconds').value),market_fallback_enabled:node('spotMarketFallback').checked,market_fallback_seconds:Number(node('spotMarketSeconds').value),protective_exit_order_type:node('spotExitType').value,protective_limit_offset_ticks:Number(node('spotExitTicks').value),auto_start_enabled:node('spotAutoStartV2').checked,stop_policy:node('spotStopPolicy').value};
+    var data={fixed_seed_krw:Number(node('spotSeedV2').value),allocation_pct:Number(node('spotAllocationV2').value),max_positions:Number(node('spotMaxPositionsV2').value),auto_start_enabled:node('spotAutoStartV2').checked};
     Kswth.mtsSpotSettings(JSON.stringify(data));
   }
 
