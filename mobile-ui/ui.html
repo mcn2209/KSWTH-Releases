@@ -43,7 +43,7 @@ table{border-radius:8px;overflow:hidden}th{background:linear-gradient(180deg,#12
 <section id="chat" class="page"><div class="card"><div class="sectionTitle"><h2>비상 작업 채팅</h2></div><p class="hint">기존 홈의 AI 작업 전송함을 바로 엽니다.</p><button onclick="showPage('home',document.querySelector('[data-page=home]'));setTimeout(function(){el('workText').focus();el('workText').scrollIntoView()},50)">AI 작업 전송함 열기</button></div></section>
 </main><div id="globalToast" style="display:none;position:fixed;left:18px;right:18px;bottom:132px;z-index:10050;padding:14px;border-radius:10px;background:#123149;color:#dff6ff;text-align:center;font-weight:700;box-shadow:0 6px 24px #0009"></div><nav class="nav"><div class="navInner" style="grid-template-columns:repeat(5,1fr)"><button type="button" class="active" data-page="home">홈</button><button type="button" data-page="domestic">국내주식</button><button type="button" data-page="coin">코인선물</button><button type="button" data-page="activity">주문·로그</button><button type="button" data-page="system">관리</button></div></nav>
 <script>
-if(!window.Kswth&&location.hostname==='127.0.0.1'){window.Kswth={appVersion:()=>"local-test",uiVersion:()=>"local-test",hasAuthToken:()=>false,cachedMtsSnapshot:()=>"",saveAuthToken:()=>{},mtsSnapshot:()=>{},mtsCommand:()=>{},mtsSettings:()=>{},chartRequest:()=>{},pcRefresh:()=>{},mobileUiRefresh:()=>{},appUpdate:()=>{},sendWork:()=>{},chooseWorkFile:()=>{},checkWorkResponses:()=>{},syncWorkHistory:()=>{},downloadResult:()=>{}}}
+if(!window.Kswth&&(location.hostname==='127.0.0.1'||location.protocol==='file:')){window.Kswth={appVersion:()=>"local-test",uiVersion:()=>"local-test",hasAuthToken:()=>false,cachedMtsSnapshot:()=>"",saveAuthToken:()=>{},mtsSnapshot:()=>{},mtsCommand:()=>{},mtsSettings:()=>{},mtsSpotSettings:()=>{},chartRequest:()=>{},spotChartRequest:()=>{},pcRefresh:()=>{},mobileUiRefresh:()=>{},appUpdate:()=>{},sendWork:()=>{},chooseWorkFile:()=>{},checkWorkResponses:()=>{},syncWorkHistory:()=>{},downloadResult:()=>{}}}
 function el(id){return document.getElementById(id)}function token(){return el('token').value.trim()}function showPage(id,b){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));el(id).classList.add('active');if(b)b.classList.add('active');window.scrollTo(0,0)}
 var trade=el('trade'),domestic=document.createElement('section'),coinPage=document.createElement('section'),activity=document.createElement('section');domestic.id='domestic';domestic.className='page';coinPage.id='coin';coinPage.className='page';activity.id='activity';activity.className='page';trade.parentNode.insertBefore(domestic,trade);trade.parentNode.insertBefore(coinPage,trade);trade.parentNode.insertBefore(activity,trade);function moveCard(id,target){var node=el(id),card=node&&node.closest('.card');if(card)target.appendChild(card)}var hero=el('wallet').closest('.hero');if(hero)coinPage.appendChild(hero);moveCard('stockEngine',domestic);moveCard('stockBalances',domestic);moveCard('stockStrategies',domestic);moveCard('stockOrders',activity);moveCard('coinEngine',coinPage);moveCard('positions',coinPage);moveCard('orders',activity);domestic.insertAdjacentHTML('beforeend','<button type="button" id="stockRefreshButton">국내주식 새로고침</button>');coinPage.insertAdjacentHTML('beforeend','<button type="button" id="coinRefreshButton">코인선물 새로고침</button>');if(trade)trade.remove();var emergency=document.createElement('button');emergency.type='button';emergency.textContent='비상채팅';emergency.className='ghost';emergency.style.cssText='width:auto;height:32px;margin:0 0 0 8px;padding:0 10px;font-size:11px';emergency.onclick=function(){showPage('chat',null)};document.querySelector('.brand').appendChild(emergency);
 document.querySelectorAll('.nav button[data-page]').forEach(function(b){var activate=function(e){if(e)e.preventDefault();showPage(b.getAttribute('data-page'),b)};b.addEventListener('click',activate);b.addEventListener('touchend',activate,{passive:false})});
@@ -189,5 +189,285 @@ el('appVer').textContent=Kswth.appVersion();el('uiVer').textContent=Kswth.uiVers
  window.saveSpotSettings=function(){var data={fixed_seed_krw:num('spotSeed'),allocation_pct:num('spotAllocation'),max_positions:num('spotMaxPositions'),base_search_bars:num('spotBaseBars'),auto_start_enabled:el('spotAutoStart').checked};if(confirm('빗썸 현물 엔진이 정지된 상태에서 설정을 저장합니다. 계속할까요?'))Kswth.mtsSpotSettings(JSON.stringify(data))};
  var prior=window.kswthMtsResult;window.kswthMtsResult=function(raw){prior(raw);try{var s=(JSON.parse(raw).snapshot||{}).spot||{},cfg=s.settings||{};el('spotBadge').textContent=s.running?'● 실행':'정지';el('spotBadge').className='badge '+(s.running?'run':'');el('spotMode').textContent=s.mode||'-';el('spotConnected').textContent=s.connected?'연결':'미연결';el('spotStatus').textContent=s.status||'-';el('spotPositionCount').textContent=String((s.positions||[]).length)+'종목';table('spotPositions',s.positions||[]);table('spotPending',s.pending_orders||[]);table('spotCandidates',s.candidates||[]);el('spotSeed').value=cfg.fixed_seed_krw??'';el('spotAllocation').value=cfg.allocation_pct??'';el('spotMaxPositions').value=cfg.max_positions??'';el('spotBaseBars').value=cfg.base_search_bars??'';el('spotAutoStart').checked=!!cfg.auto_start_enabled;el('spotSave').disabled=!!s.running}catch(ignore){}};
 })();
+</script><style>
+:root {
+  --spot-gap: 12px;
+  --spot-pad: 14px;
+  --spot-row-height: 38px;
+  --spot-font-size: 12px;
+  --spot-left-width: 238px;
+  --spot-chart-height: 250px;
+  --spot-table-height: 310px;
+  --spot-calendar-height: 286px;
+  --spot-profit: #ff5f7c;
+  --spot-loss: #58a5ff;
+  --spot-good: #48e0c2;
+  --spot-bad: #ff849b;
+}
+
+.spot-shell { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--spot-gap); }
+.spot-card { padding: var(--spot-pad); }
+.spot-identity { display: flex; align-items: center; gap: 10px; }
+.spot-ci { width: 38px; height: 38px; object-fit: contain; }
+.spot-identity-text { min-width: 0; flex: 1; }
+.spot-identity-text b { display: block; color: #ffd06b; font-size: 15px; }
+.spot-identity-text small { color: #8faabc; }
+.spot-state { font-weight: 800; }
+.spot-state.RUNNING { color: var(--spot-good); }
+.spot-state.EXIT_ONLY,
+.spot-state.FAULT_PROTECTING,
+.spot-state.DISCONNECTED { color: var(--spot-bad); }
+.spot-state.STOPPED { color: #9bb1c0; }
+.spot-disconnected { display: none; color: #ff8795; border: 1px solid #7b3140; background: #351721; padding: 10px; border-radius: 9px; margin-top: 10px; }
+.spot-disconnected.show { display: block; }
+.spot-settings-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.spot-setting { display: grid; gap: 5px; color: #86a2b4; font-size: var(--spot-font-size); }
+.spot-setting input,
+.spot-setting select { width: 100%; min-width: 0; height: 42px; border: 1px solid #20516e; border-radius: 8px; background: #071722; color: #eef9ff; padding: 0 9px; }
+.spot-setting.check { display: flex; align-items: center; min-height: 38px; }
+.spot-setting.check input { width: 18px; height: 18px; margin-right: 8px; }
+.spot-setting input:disabled,
+.spot-setting select:disabled { opacity: .62; }
+.spot-runtime-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.spot-runtime-grid .kv { min-width: 0; }
+.spot-runtime-grid strong { white-space: nowrap; overflow: visible; font-size: 12px; }
+.spot-stable-area { min-height: calc(var(--spot-calendar-height) + var(--spot-table-height) + 190px); }
+.spot-calendar-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.spot-calendar-head button { width: 42px; height: 34px; margin: 0; }
+.spot-calendar { height: var(--spot-calendar-height); display: grid; grid-template-rows: auto repeat(6, 1fr); border: 1px solid #173a53; border-radius: 9px; overflow: hidden; }
+.spot-week,
+.spot-weekdays { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.spot-weekdays { background: #102b40; }
+.spot-day { min-width: 0; padding: 5px 3px; border-right: 1px solid #153548; border-bottom: 1px solid #153548; text-align: center; font-size: 10px; color: #7f9aac; }
+.spot-day b { display: block; font-size: 11px; color: #bed9e8; }
+.spot-day.pos span,
+.spot-positive { color: var(--spot-profit) !important; }
+.spot-day.neg span,
+.spot-negative { color: var(--spot-loss) !important; }
+.spot-totals { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 9px; }
+.spot-tabs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 5px; }
+.spot-tabs button { height: 38px; margin: 0; padding: 0 3px; font-size: 11px; background: #193347; }
+.spot-tabs button.active { background: #a66c08; border-color: #ffc75b; }
+.spot-table { height: var(--spot-table-height); overflow: auto; border: 1px solid #173a53; border-radius: 9px; margin-top: 9px; }
+.spot-table table { min-width: 760px; font-size: var(--spot-font-size); }
+.spot-table th { position: sticky; top: 0; z-index: 1; }
+.spot-table td { height: var(--spot-row-height); max-width: 170px; overflow: hidden; text-overflow: ellipsis; }
+.spot-chart { min-height: var(--spot-chart-height); display: grid; place-items: center; border: 1px dashed #28617d; border-radius: 9px; color: #7894a8; padding: 16px; text-align: center; }
+.spot-log { max-height: 190px; overflow: auto; }
+.spot-error-count { color: var(--spot-bad); }
+.nav button[data-page="spot"]:before { content: "●"; color: #f5a623; }
+
+@media (min-width: 900px) and (orientation: landscape) {
+  .app { max-width: 1500px; }
+  .spot-shell { grid-template-columns: minmax(210px, var(--spot-left-width)) minmax(520px, 1fr) minmax(300px, .72fr); align-items: start; }
+  .spot-sidebar { position: sticky; top: 86px; }
+  .spot-main,
+  .spot-right { min-width: 0; }
+  .spot-settings-grid { grid-template-columns: 1fr; }
+  .spot-runtime-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .spot-table { height: 360px; }
+  .spot-calendar { height: 260px; }
+  .spot-stable-area { min-height: 850px; }
+}
+
+@media (max-width: 520px) {
+  html,
+  body { width: 100%; max-width: 100%; overflow-x: hidden; }
+  .app,
+  .spot-shell,
+  .spot-sidebar,
+  .spot-main,
+  .spot-right,
+  .spot-card { width: 100%; min-width: 0; max-width: 100%; }
+  :root { --spot-pad: 11px; --spot-gap: 9px; --spot-font-size: 10px; --spot-table-height: 285px; --spot-calendar-height: 260px; }
+  .app { padding-left: 11px; padding-right: 11px; }
+  .spot-identity { display: grid; grid-template-columns: 38px minmax(0, 1fr); }
+  .spot-identity-text b { font-size: 13px; overflow-wrap: anywhere; }
+  .spot-identity .spot-state { grid-column: 2; justify-self: start; }
+  .spot-settings-grid { grid-template-columns: 1fr; }
+  .spot-runtime-grid { grid-template-columns: 1fr 1fr; }
+  .sectionTitle,
+  .sectionTitle h2 { min-width: 0; }
+  .nav,
+  .navInner { width: 100vw; max-width: 100vw; }
+  .nav button { min-width: 0; font-size: 9px; }
+  .navInner { overflow: hidden; }
+}
+
+</style><script>
+(function () {
+  'use strict';
+
+  var page = document.getElementById('spot');
+  if (!page) return;
+
+  page.innerHTML = `
+    <div class="spot-identity card spot-card">
+      <img class="spot-ci" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACsAAAAsCAYAAAD8WEF4AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAVASURBVFhH1ZlfbBRFHMc/Mzuzu7elhVJaBKWAFQhKgggoMUgkIRKF+GLikyby4J9o4gPRxGdffNE3TCTGBxMSI4mJMfEBtKjRqBgwIkaEGGyLKIXyr7Tl/uzO+HDt9Xburt0rivSTNO1953byudnf/nY7J6y1llmCaCRrjCGOY4wxGGPc4f8EKSVSSpRSSCnd4fqypVKJUqnkxjcVrTVa61SWkjXGUCgUqOP/vyCEIAiCyiqn1jpJkltGFMBaS5IkldeVlU2ShEKhUP3eTHgn9uP37nZjbNhOvP4l4nUvuENNE4ZhuZ4ngupP0Ayy7yCicLnmR149je59BdnX6x7SNHEcQ3UZzOiKj6/jDXztphWEsHh/HHDjpplwuyFZef4YcuRPN06T63CTpqmRnQlehlOcdD/sRjPmhmRl/9SyprUb07XWjWfMjGULVwaR54+5cQVr4WLXdlChOzRjKq1rbGzMHashf/I4V/a/i7FwudTHxs5eaHCjS4zg5JnNhAtWgihnXvsC9NIegjX3kVu+2j1kSqIoak72wp7XufTBXpSAFZvGCLuL9WUlFK9JTh1qJS6NmwKesviRQbVIcusfRD/xGi0rN6QObUQURU2UgbWMHPmm/KeyqPYYGrVmCYVRSZIIECA8UKHBCyzSt2hdwvv9C7w9O7n0/Ufu0Q3JLFs8c5rS6VMARO0xKjLQ6M4sYHRIYQ1IZZGexSKQyuIpkB5IbdFBno6DL1I4d8KdoS6ZZcd+/BablM9528IYPOrLCiCGa0MKMT67EKADg58z6NCgQoMKyisd+KNER99yZ6lLZtnRw18CICS0LojrizJeryOS/LCHkBbpgc4Z/MigcxYdGXTOoEJQvkEqi+rvheKIO1MNmWXjwbMAqMAQzk2mrNeRIUVcFEg1Keo7v3VoUIEFAd7184irfe5MNWSWDVffC8Cc+QkiaFAClPPRCxrtW4LIEIyvpB/ZKuFyV5BqchJRHE5NU4/Msh3Pvoq/5VHmLptsRTUIoCTIm4igPUDP9dG5SWEdjctGBqmrPq2l3DKmoak+m8Qx9u3VtJm/oMFzz0jnA1zc9j6RkoQiJvnhQ+xnb0zWbWjKXilXj/yuI9j5K6unStFcnwXy/YdpixuLAgSrHqNz8RJaum7H61yKfuRl/K4Ogpb6ogC2ZQF2zqJ0WIemZOf+/bkb1ZAs3Zp6nc9fx9MxOldfFMDOXwV+qxvX0ISsxes/5IYpzLzlmM41qez8wClCfaFcz3VEAcwdm92oLpllxfAZ5NAvbpzCLNoIXpDKeoY+KUs2EAVI7tzuRnXJLCsvHEfEeTdOYVvSdSdGz6F/3TdljZuOuzFd5bY4HdllL/7mRjXIs99BqdxVxPAAwafPIMaG3LeliNc8DVK5cV0yty7duxv90143rsG0r8S2LkIO/owoXHaHU9hcJ9d3Hc30f1pzras46iZ1kZdP4Q18Na0oQOn+3ZlEJ8guG8xxkxvCLFxHvO55N56SzLJ2Xo8bzRirWylsf6emc0xHZtlkyRasneK5ICNWaIo73sM6/TgLmWVt5xqSFTvcuCls0Ebx8X0kPTObpyLredM/9ZS2volpW+bGmUgWb6Lw5AGSu3a6Q9My4VZpXVk3kMXVPnTvblTGPaykcy3JuueI73kqcz91mdhYrsgaY8jnp75DVeP19yJPfowcPIIcPQdxHmEFJmzDtnVjbttAsmwbZslDINM72M0yseWZ2vnOuro3E9/3Uap8RlIXmFIKIW78iv+3EEKkrqXZ+wVINbPmq6VblVr9W5hZJfsPlsItpMOMPR8AAAAASUVORK5CYII=" alt="Bithumb">
+      <div class="spot-identity-text"><b>BITHUMB SPOT TAIL · KRW SPOT</b><small>PC 통합 런타임·빗썸 현물 DB 원본 표시</small></div>
+      <span id="spotLifecycle" class="badge spot-state STOPPED">STOPPED</span>
+    </div>
+    <div id="spotDisconnected" class="spot-disconnected">연결 끊김 · 마지막 동기화 <span id="spotLastSync">-</span></div>
+    <div class="spot-shell">
+      <aside class="spot-sidebar">
+        <div class="card spot-card settings">
+          <div class="sectionTitle"><h2>설정</h2><span id="spotSettingsLock" class="badge">정지 시 변경</span></div>
+          <div class="spot-settings-grid">
+            <label class="spot-setting"><span>API</span><input id="spotApi" readonly value="저장 안 됨"></label>
+            <label class="spot-setting"><span>실행 모드</span><input id="spotModeV2" readonly value="LIVE"></label>
+            <label class="spot-setting check"><input id="spotAutoStartV2" type="checkbox">자동시작</label>
+            <label class="spot-setting"><span>고정 시드 KRW</span><input id="spotSeedV2" type="number" min="0"></label>
+            <label class="spot-setting"><span>종목당 배분 %</span><input id="spotAllocationV2" type="number" min="0.01" max="100" step="0.01"></label>
+            <label class="spot-setting"><span>최대 보유 종목</span><input id="spotMaxPositionsV2" type="number" min="1"></label>
+            <label class="spot-setting"><span>베이스 탐색 봉</span><input id="spotBaseBarsV2" type="number" min="1"></label>
+            <label class="spot-setting"><span>베이스 상승률 %</span><input id="spotBaseRise" type="number" step="0.01"></label>
+            <label class="spot-setting"><span>최소 구조거리 %</span><input id="spotStructureDistance" type="number" step="0.01"></label>
+            <label class="spot-setting check"><input id="spotTelegram" type="checkbox">텔레그램</label>
+            <label class="spot-setting check"><input id="spotCharts" type="checkbox">차트 전송</label>
+            <label class="spot-setting check"><input id="spotLimitRefresh" type="checkbox">지정가 갱신</label>
+            <label class="spot-setting"><span>지정가 갱신 초</span><input id="spotLimitSeconds" type="number" min="1"></label>
+            <label class="spot-setting check"><input id="spotMarketFallback" type="checkbox">시장가 전환</label>
+            <label class="spot-setting"><span>시장가 전환 초</span><input id="spotMarketSeconds" type="number" min="1"></label>
+            <label class="spot-setting"><span>보호매도 유형</span><select id="spotExitType"><option>LIMIT</option><option>MARKET</option></select></label>
+            <label class="spot-setting"><span>보호 지정가 틱</span><input id="spotExitTicks" type="number" min="0"></label>
+            <label class="spot-setting"><span>정지 정책</span><select id="spotStopPolicy"><option>PRESERVE</option><option>STOP_SERVICE</option></select></label>
+          </div>
+          <button id="spotSaveV2" type="button">설정 저장</button>
+          <div class="actions"><button id="spotStartV2" type="button">엔진 시작</button><button id="spotStopV2" class="stop" type="button">엔진 정지</button></div>
+          <p class="dangerNote">비밀키와 토큰은 표시·전송하지 않습니다. 명령은 PC 단일 컨트롤러만 실행합니다.</p>
+        </div>
+      </aside>
+      <div class="spot-main">
+        <div class="card spot-card">
+          <div class="sectionTitle"><h2>엔진 상태</h2><span id="spotErrorCount" class="badge spot-error-count">오류 0</span></div>
+          <div class="spot-runtime-grid">
+            <div class="kv"><span>API 연결</span><strong id="spotApiConnected">-</strong></div>
+            <div class="kv"><span>재시작 복구</span><strong id="spotRecovery">-</strong></div>
+            <div class="kv"><span>Heartbeat</span><strong id="spotHeartbeat">-</strong></div>
+            <div class="kv"><span>마지막 완성 4시간봉</span><strong id="spot4h">-</strong></div>
+            <div class="kv"><span>잔고 동기화</span><strong id="spotBalanceSync">-</strong></div>
+            <div class="kv"><span>미체결 동기화</span><strong id="spotOrdersSync">-</strong></div>
+            <div class="kv"><span>체결 동기화</span><strong id="spotFillsSync">-</strong></div>
+            <div class="kv"><span>신규진입</span><strong id="spotEntryState">-</strong></div>
+          </div>
+          <div id="spotStatusText" class="hint">상태 조회 전</div>
+        </div>
+        <div class="card spot-card"><div class="sectionTitle"><h2>06 시장상태</h2><span id="spotBtcMode" class="badge">-</span></div><div id="spotSummary" class="grid"></div></div>
+        <div class="spot-stable-area">
+          <div class="card spot-card">
+            <div class="sectionTitle"><h2>07 수익 달력</h2></div>
+            <div class="spot-calendar-head"><button id="spotPrevMonth" class="ghost" type="button">‹</button><b id="spotCalendarTitle">-</b><button id="spotNextMonth" class="ghost" type="button">›</button></div>
+            <div id="spotCalendar" class="spot-calendar"></div>
+            <div class="spot-totals"><div class="kv"><span>월 누적</span><strong id="spotMonthTotal">-</strong></div><div class="kv"><span>연 누적</span><strong id="spotYearTotal">-</strong></div></div>
+          </div>
+          <div class="card spot-card">
+            <div class="spot-tabs"><button class="active" data-spot-table="recent_orders">주문</button><button data-spot-table="candidates">후보</button><button data-spot-table="pending_orders">매수대기</button><button data-spot-table="positions">보유종목</button><button data-spot-table="audit_events">감사</button></div>
+            <div id="spotTableV2" class="spot-table empty">데이터 없음</div>
+          </div>
+        </div>
+      </div>
+      <aside class="spot-right">
+        <div class="card spot-card"><div class="sectionTitle"><h2>완성 4시간봉 TAIL 차트</h2></div><div id="spotChartV2" class="spot-chart">후보·주문·보유종목 행을 선택하면 확대 가능한 차트를 받습니다.</div></div>
+        <div class="card spot-card"><div class="sectionTitle"><h2>운영·오류 로그</h2></div><pre id="spotLogsV2" class="response spot-log">로그 동기화 전</pre></div>
+      </aside>
+    </div>`;
+
+  var snapshot = {};
+  var activeTable = 'recent_orders';
+  var calendarSelection = null;
+  var schemas = {
+    recent_orders: [['시간',['time','created_at','order_time']],['종목',['symbol','market']],['구분',['event_kind','action','type']],['역할',['role','leg','entry_leg']],['매수매도',['side']],['주문유형',['order_type']],['주문가',['order_price','price']],['체결가',['fill_price']],['주문수량',['order_qty','quantity','qty']],['체결수량',['filled_qty','executed_qty']],['잔량',['remaining_qty','remaining']],['상태',['status','state']],['소유',['ownership','owner','origin']]],
+    candidates: [['신호시각',['signal_time','time']],['종목',['symbol','market']],['BTC 필터',['btc_filter','btc_mode','btc_state']],['1차 주문가',['leg1_order_price','leg1_price','entry1_price']],['2차 주문가',['leg2_order_price','leg2_price','entry2_price']],['구조선',['support_price','support','structure_line']],['상태',['status','state']]],
+    pending_orders: [['주문시각',['created_at','order_time','time']],['종목',['symbol','market']],['구분',['leg','entry_leg']],['매매',['side','action']],['주문가',['order_price','price']],['주문수량',['order_qty','quantity','qty']],['체결수량',['filled_qty','executed_qty']],['잔량',['remaining_qty','remaining']],['상태',['status','state']],['소유',['ownership','owner','origin']]],
+    positions: [['종목',['symbol','market']],['소유',['ownership','owner','origin','adoption_type']],['1차 주문가',['leg1_order_price','first_order_price']],['1차 체결가',['leg1_fill_price','first_fill_price']],['2차 주문가',['leg2_order_price','second_order_price']],['2차 체결가',['leg2_fill_price','second_fill_price']],['보유수량',['quantity','qty','remaining_quantity']],['평균매수가',['average_price','avg_price','entry_price']],['구조선',['support_price','support','structure_line']],['손절가',['stop_price','stop','stop_loss']],['TP1',['tp1_price','tp1']],['TP2',['tp2_price','tp2']],['TP3',['tp3_price','tp3']],['평가손익',['unrealized_pnl','unrealized_pnl_krw']],['실현손익',['realized_pnl','realized_pnl_krw']],['수수료',['fees','fee','fees_krw']]],
+    audit_events: [['시간',['time']],['종목',['market']],['이벤트',['event_type']],['등급',['level']],['소유 구분',['ownership']],['이벤트 키',['event_key']]]
+  };
+
+  function node(id) { return document.getElementById(id); }
+  function setText(id, value) { var n=node(id); if(n) n.textContent=(value===undefined||value===null||value==='')?'-':String(value); }
+  function escapeHtml(value) { var d=document.createElement('div'); d.textContent=value==null?'':String(value); return d.innerHTML; }
+  function valueOf(row, aliases) { for(var i=0;i<aliases.length;i++) if(row && row[aliases[i]]!==undefined && row[aliases[i]]!==null) return row[aliases[i]]; return '-'; }
+  function marketOf(row) { var value=valueOf(row,['market','symbol']); return value==='-'?'':String(value).toUpperCase(); }
+  function compact(value) {
+    if(value===null||value===undefined||value==='') return '-';
+    var raw=String(value), number=Number(raw.replace(/,/g,''));
+    if(!isFinite(number)||!/[0-9]/.test(raw)) return raw;
+    var abs=Math.abs(number), digits=abs>=1000?0:abs>=1?4:8;
+    return number.toLocaleString('ko-KR',{maximumFractionDigits:digits});
+  }
+  function kst(value) {
+    if(!value||value==='-') return '-';
+    var text=String(value);
+    if(/^\d{12}$/.test(text)) text=text.slice(0,4)+'-'+text.slice(4,6)+'-'+text.slice(6,8)+'T'+text.slice(8,10)+':'+text.slice(10,12)+':00+09:00';
+    var date=new Date(text); if(isNaN(date.getTime())) return text;
+    var parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Seoul',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).formatToParts(date), out={};
+    parts.forEach(function(part){out[part.type]=part.value;});
+    return out.month+'-'+out.day+' '+out.hour+':'+out.minute+':'+out.second;
+  }
+  function stale(s) {
+    var status=s.public_status||{}, stamp=status.process_heartbeat_at_utc||status.published_at_utc||s._server_time;
+    if(!stamp) return true;
+    var date=new Date(stamp); return isNaN(date.getTime())||Date.now()-date.getTime()>15000;
+  }
+  function input(id, value, checkbox) { var n=node(id); if(!n)return; if(checkbox)n.checked=!!value; else n.value=value===undefined||value===null?'':value; }
+
+  function renderTable() {
+    var rows=snapshot[activeTable]||[], schema=schemas[activeTable]||[], box=node('spotTableV2');
+    if(!rows.length){box.className='spot-table empty';box.textContent='데이터 없음';return;}
+    box.className='spot-table';
+    box.innerHTML='<table><thead><tr>'+schema.map(function(col){return '<th>'+escapeHtml(col[0])+'</th>';}).join('')+'</tr></thead><tbody>'+rows.map(function(row,index){return '<tr data-index="'+index+'">'+schema.map(function(col){var raw=valueOf(row,col[1]);return '<td title="'+escapeHtml(String(raw))+'">'+escapeHtml(compact(raw))+'</td>';}).join('')+'</tr>';}).join('')+'</tbody></table>';
+    box.querySelectorAll('tbody tr').forEach(function(rowNode){rowNode.onclick=function(){var row=rows[Number(rowNode.dataset.index)],market=marketOf(row);if(!market)return;setText('spotChartV2',market+' · 완성 4시간봉 차트 요청 중…');if(typeof Kswth.spotChartRequest==='function')Kswth.spotChartRequest(market,JSON.stringify(row));else Kswth.chartRequest('spot',market);};});
+  }
+
+  function renderCalendar() {
+    var performance=snapshot.performance||{}, year=calendarSelection?calendarSelection.year:Number(performance.year||new Date().getFullYear()), month=calendarSelection?calendarSelection.month:Number(performance.month||new Date().getMonth()+1);
+    calendarSelection={year:year,month:month}; setText('spotCalendarTitle',year+'년 '+String(month).padStart(2,'0')+'월');
+    var first=new Date(year,month-1,1),last=new Date(year,month,0).getDate(),lead=(first.getDay()+6)%7,cells=[],i;
+    for(i=0;i<lead;i++)cells.push(0);for(i=1;i<=last;i++)cells.push(i);while(cells.length<42)cells.push(0);
+    var byMonth=performance.days_by_month||{},days=byMonth[month]||byMonth[String(month)]||{};
+    var html='<div class="spot-weekdays">'+['월','화','수','목','금','토','일'].map(function(day){return '<div class="spot-day">'+day+'</div>';}).join('')+'</div>';
+    for(i=0;i<6;i++)html+='<div class="spot-week">'+cells.slice(i*7,i*7+7).map(function(day){if(!day)return '<div class="spot-day"></div>';var record=days[day]||days[String(day)]||{},profit=Number(record.profit||0),kind=profit>0?'pos':profit<0?'neg':'';return '<div class="spot-day '+kind+'"><b>'+day+'</b><span>'+compact(profit)+'</span></div>';}).join('')+'</div>';
+    node('spotCalendar').innerHTML=html;
+    var monthly=performance.monthly||{},record=monthly[month]||monthly[String(month)]||{},monthReturn=Number(record.cumulative_return_pct||record.return_pct||0),yearReturn=Number(performance.year_return_pct||0);
+    setText('spotMonthTotal',(monthReturn>=0?'+':'')+monthReturn.toFixed(2)+'% · '+compact(record.cumulative_profit||record.profit||0)+' KRW');
+    setText('spotYearTotal',(yearReturn>=0?'+':'')+yearReturn.toFixed(2)+'% · '+compact(performance.year_profit||0)+' KRW');
+  }
+
+  function shiftMonth(offset) { var current=calendarSelection||{year:new Date().getFullYear(),month:new Date().getMonth()+1}, date=new Date(current.year,current.month-1+offset,1);calendarSelection={year:date.getFullYear(),month:date.getMonth()+1};renderCalendar(); }
+  function clearLive() {
+    ['spotApiConnected','spotRecovery','spotHeartbeat','spot4h','spotBalanceSync','spotOrdersSync','spotFillsSync','spotEntryState','spotBtcMode'].forEach(function(id){setText(id,'-');});
+    node('spotSummary').innerHTML='<div class="empty">PC 최신 상태 없음</div>';node('spotTableV2').className='spot-table empty';node('spotTableV2').textContent='연결 끊김 · 추정값을 표시하지 않습니다.';
+  }
+  function renderSpot(s, serverTime) {
+    snapshot=s||{};snapshot._server_time=serverTime||'';
+    var isStale=stale(snapshot),publicStatus=snapshot.public_status||{},runtime=snapshot.runtime_status||{},market=snapshot.market||{},api=snapshot.api||{},settings=snapshot.settings||{};
+    var lifecycle=String(snapshot.lifecycle||(snapshot.exit_only?'EXIT_ONLY':snapshot.running?'RUNNING':'STOPPED')).toUpperCase();
+    setText('spotLastSync',kst(publicStatus.published_at_utc||serverTime));node('spotDisconnected').className='spot-disconnected'+(isStale?' show':'');
+    setText('spotLifecycle',isStale?'DISCONNECTED':lifecycle);node('spotLifecycle').className='badge spot-state '+(isStale?'DISCONNECTED':lifecycle);
+    setText('spotErrorCount','오류 '+Number(snapshot.error_count||0));setText('spotStatusText',isStale?'PC 상태 시각이 오래되었습니다. 최신 응답 전에는 값을 표시하지 않습니다.':snapshot.status||'-');
+    input('spotApi',(api.credentials_present?'API 저장됨':'API 저장 안 됨')+(api.telegram_credentials_present?' · Telegram 저장됨':''));input('spotModeV2',settings.mode||snapshot.mode||'LIVE');input('spotAutoStartV2',settings.auto_start_enabled,true);input('spotSeedV2',settings.fixed_seed_krw);input('spotAllocationV2',settings.allocation_pct);input('spotMaxPositionsV2',settings.max_positions);input('spotBaseBarsV2',settings.base_search_bars);input('spotBaseRise',settings.base_rise_pct);input('spotStructureDistance',settings.min_initial_structure_distance_pct);input('spotTelegram',settings.telegram_enabled,true);input('spotCharts',settings.chart_notifications_enabled,true);input('spotLimitRefresh',settings.limit_refresh_enabled,true);input('spotLimitSeconds',settings.limit_refresh_seconds);input('spotMarketFallback',settings.market_fallback_enabled,true);input('spotMarketSeconds',settings.market_fallback_seconds);input('spotExitType',settings.protective_exit_order_type||'LIMIT');input('spotExitTicks',settings.protective_limit_offset_ticks);input('spotStopPolicy',settings.stop_policy||'PRESERVE');
+    var locked=!!snapshot.running;setText('spotSettingsLock',locked?'엔진 실행 중':'변경 가능');node('spotSaveV2').disabled=locked;page.querySelectorAll('.spot-setting input:not([readonly]),.spot-setting select').forEach(function(control){control.disabled=locked;});
+    if(isStale){clearLive();return;}
+    setText('spotApiConnected',snapshot.connected||api.connected?'연결':'미연결');setText('spotRecovery',publicStatus.recovery_state||runtime.recovery_status||'-');setText('spotHeartbeat',kst(publicStatus.protection_heartbeat_at_utc||runtime.scheduler_heartbeat));setText('spot4h',kst(publicStatus.last_completed_4h_slot||market.last_completed_4h));setText('spotBalanceSync',kst(publicStatus.balance_sync_at_utc||runtime.balance_sync_at));setText('spotOrdersSync',kst(publicStatus.open_orders_sync_at_utc||runtime.open_orders_sync_at));setText('spotFillsSync',kst(publicStatus.fills_sync_at_utc||runtime.fills_sync_at));setText('spotEntryState',snapshot.entry_paused?'신규진입 중지':'신규진입 허용');setText('spotBtcMode',market.btc_mode||'-');
+    var summary=snapshot.summary||{},labels={fixed_seed_krw:'시드',available_krw:'사용가능 KRW',realized_pnl_krw:'실현손익',unrealized_pnl_krw:'평가손익',fees_krw:'수수료'};
+    node('spotSummary').innerHTML=Object.keys(labels).map(function(key){return '<div class="kv"><span>'+labels[key]+'</span><strong title="'+escapeHtml(String(summary[key]===undefined?'-':summary[key]))+'">'+escapeHtml(compact(summary[key]))+'</strong></div>';}).join('');
+    renderCalendar();renderTable();var logs=(snapshot.errors||[]).concat(snapshot.logs||[]).slice(-40).reverse();setText('spotLogsV2',logs.length?logs.join('\n'):'로그 없음');
+  }
+  function saveSettings() {
+    var data={fixed_seed_krw:Number(node('spotSeedV2').value),allocation_pct:Number(node('spotAllocationV2').value),max_positions:Number(node('spotMaxPositionsV2').value),base_search_bars:Number(node('spotBaseBarsV2').value),base_rise_pct:Number(node('spotBaseRise').value),min_initial_structure_distance_pct:node('spotStructureDistance').value===''?null:Number(node('spotStructureDistance').value),telegram_enabled:node('spotTelegram').checked,chart_notifications_enabled:node('spotCharts').checked,limit_refresh_enabled:node('spotLimitRefresh').checked,limit_refresh_seconds:Number(node('spotLimitSeconds').value),market_fallback_enabled:node('spotMarketFallback').checked,market_fallback_seconds:Number(node('spotMarketSeconds').value),protective_exit_order_type:node('spotExitType').value,protective_limit_offset_ticks:Number(node('spotExitTicks').value),auto_start_enabled:node('spotAutoStartV2').checked,stop_policy:node('spotStopPolicy').value};
+    Kswth.mtsSpotSettings(JSON.stringify(data));
+  }
+
+  node('spotSaveV2').onclick=saveSettings;
+  node('spotStartV2').onclick=function(){Kswth.mtsCommand('spot_start',false);};
+  node('spotStopV2').onclick=function(){Kswth.mtsCommand('spot_stop',false);};
+  node('spotPrevMonth').onclick=function(){shiftMonth(-1);};node('spotNextMonth').onclick=function(){shiftMonth(1);};
+  page.querySelectorAll('[data-spot-table]').forEach(function(button){button.onclick=function(){activeTable=button.dataset.spotTable;page.querySelectorAll('[data-spot-table]').forEach(function(item){item.classList.toggle('active',item===button);});renderTable();};});
+
+  var priorResult=window.kswthMtsResult;
+  window.kswthMtsResult=function(raw){priorResult(raw);try{var result=JSON.parse(raw),root=result.snapshot||{};if(root.spot)renderSpot(root.spot,root.server_time);if(result.chart_url)setText('spotChartV2',(result.chart_name||'4H TAIL 차트')+' · 확대 화면으로 전송 완료');}catch(ignore){}};
+  if(location.hash==='#spot'||location.search.indexOf('page=spot')>=0){var navButton=document.querySelector('[data-page="spot"]');showPage('spot',navButton);setTimeout(function(){window.scrollTo(0,0);},20);}
+})();
+
 </script></body></html>
 
