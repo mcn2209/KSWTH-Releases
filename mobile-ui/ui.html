@@ -446,6 +446,8 @@ body.spot-modal-open { overflow: hidden; }
   line-height: 1;
 }
 .nav button[data-page="spot"].active:before { color: #70e5ff; }
+.spotHomeSummary:before { background: #ffb72e; box-shadow: 0 0 12px #ffb72e99; }
+.spotHomeSummary .marketSummaryHead b { color: #ffd06b; }
 
 @media (min-width: 900px) and (orientation: landscape) {
   .app { max-width: 1500px; }
@@ -490,6 +492,19 @@ body.spot-modal-open { overflow: hidden; }
 
   var page = document.getElementById('spot');
   if (!page) return;
+
+  var homeOverviewGrid = document.querySelector('.homeOverviewGrid');
+  if (homeOverviewGrid && !document.getElementById('homeSpot')) {
+    var homeSpotCard = document.createElement('section');
+    homeSpotCard.className = 'marketSummary spotHomeSummary';
+    homeSpotCard.innerHTML = '<div class="marketSummaryHead"><b>코인현물 · 빗썸</b><strong id="homeSpot">-</strong></div>' +
+      '<div class="marketRows">' +
+        '<div class="marketLine"><span>사용가능 KRW</span><strong id="homeSpotAvailable">-</strong></div>' +
+        '<div class="marketLine"><span>보유종목</span><strong id="homeSpotPositions">-</strong></div>' +
+        '<div class="marketLine"><span>거래소 연결</span><strong id="homeSpotConnection">-</strong></div>' +
+      '</div>';
+    homeOverviewGrid.appendChild(homeSpotCard);
+  }
 
   page.innerHTML = `
     <div class="spot-identity card spot-card">
@@ -662,6 +677,8 @@ body.spot-modal-open { overflow: hidden; }
   function clearLive() {
     ['spotApiConnected','spotRecovery','spotHeartbeat','spot4h','spotBalanceSync','spotOrdersSync','spotFillsSync','spotEntryState','spotBtcMode'].forEach(function(id){setText(id,'-');});
     node('spotSummary').innerHTML='<div class="empty">PC 최신 상태 없음</div>';node('spotTableV2').className='spot-table empty';node('spotTableV2').textContent='연결 끊김 · 추정값을 표시하지 않습니다.';
+    setText('homeSpot','연결 끊김');setText('homeSpotAvailable','-');setText('homeSpotPositions','-');setText('homeSpotConnection','데이터 지연');
+    if(node('homeSpot'))node('homeSpot').className='warning';if(node('homeSpotConnection'))node('homeSpotConnection').className='warning';
   }
   function renderSpot(s, serverTime) {
     snapshot=s||{};snapshot._server_time=serverTime||'';
@@ -669,12 +686,19 @@ body.spot-modal-open { overflow: hidden; }
     var lifecycle=String(snapshot.lifecycle||(snapshot.exit_only?'EXIT_ONLY':snapshot.running?'RUNNING':'STOPPED')).toUpperCase();
     setText('spotLastSync',kst(publicStatus.published_at_utc||serverTime));node('spotDisconnected').className='spot-disconnected'+(isStale?' show':'');
     setText('spotLifecycle',isStale?'DISCONNECTED':lifecycle);node('spotLifecycle').className='badge spot-state '+(isStale?'DISCONNECTED':lifecycle);
+    var summary=snapshot.summary||{}, positionCount=(snapshot.positions||[]).length, connected=!!(snapshot.connected||api.connected);
+    setText('homeSpot',isStale?'연결 끊김':(lifecycle==='RUNNING'?'● 실행 중':lifecycle));
+    setText('homeSpotAvailable',isStale?'-':compact(summary.available_krw)+' KRW');
+    setText('homeSpotPositions',isStale?'-':positionCount+'종목');
+    setText('homeSpotConnection',isStale?'데이터 지연':(connected?'ONLINE':'미연결'));
+    if(node('homeSpot'))node('homeSpot').className=!isStale&&lifecycle==='RUNNING'?'healthy':(isStale?'warning':'');
+    if(node('homeSpotConnection'))node('homeSpotConnection').className=!isStale&&connected?'healthy':'warning';
     setText('spotErrorCount','누적 오류 '+Number(snapshot.error_count||0));setText('spotStatusText',isStale?'PC 상태 시각이 오래되었습니다. 최신 응답 전에는 값을 표시하지 않습니다.':snapshot.status||'-');
     input('spotApi',(api.credentials_present?'API 저장됨':'API 저장 안 됨')+(api.telegram_credentials_present?' · Telegram 저장됨':''));input('spotModeV2',settings.mode||snapshot.mode||'LIVE');input('spotAutoStartV2',settings.auto_start_enabled,true);input('spotSeedV2',settings.fixed_seed_krw);input('spotAllocationV2',settings.allocation_pct);input('spotMaxPositionsV2',settings.max_positions);input('spotBaseBarsV2',settings.base_search_bars);input('spotBaseRise',settings.base_rise_pct);input('spotStructureDistance',settings.min_initial_structure_distance_pct);input('spotTelegram',settings.telegram_enabled,true);input('spotCharts',settings.chart_notifications_enabled,true);input('spotLimitRefresh',settings.limit_refresh_enabled,true);input('spotLimitSeconds',settings.limit_refresh_seconds);input('spotMarketFallback',settings.market_fallback_enabled,true);input('spotMarketSeconds',settings.market_fallback_seconds);input('spotExitType',settings.protective_exit_order_type||'LIMIT');input('spotExitTicks',settings.protective_limit_offset_ticks);input('spotStopPolicy',settings.stop_policy||'PRESERVE');
     var locked=!!snapshot.running;setText('spotSettingsLock',locked?'엔진 실행 중':'변경 가능');node('spotSaveV2').disabled=locked;page.querySelectorAll('.spot-setting input:not([readonly]),.spot-setting select').forEach(function(control){control.disabled=locked;});
     if(isStale){clearLive();return;}
     setText('spotApiConnected',snapshot.connected||api.connected?'연결':'미연결');setText('spotRecovery',publicStatus.recovery_state||runtime.recovery_status||'-');setText('spotHeartbeat',kst(publicStatus.protection_heartbeat_at_utc||runtime.scheduler_heartbeat));setText('spot4h',kst(publicStatus.last_completed_4h_slot||market.last_completed_4h));setText('spotBalanceSync',kst(publicStatus.balance_sync_at_utc||runtime.balance_sync_at));setText('spotOrdersSync',kst(publicStatus.open_orders_sync_at_utc||runtime.open_orders_sync_at));setText('spotFillsSync',kst(publicStatus.fills_sync_at_utc||runtime.fills_sync_at));setText('spotEntryState',snapshot.entry_paused?'신규진입 중지':'신규진입 허용');setText('spotBtcMode',market.btc_mode||'-');
-    var summary=snapshot.summary||{},labels={fixed_seed_krw:'시드',available_krw:'사용가능 KRW',realized_pnl_krw:'실현손익',unrealized_pnl_krw:'평가손익',fees_krw:'수수료'};
+    var labels={fixed_seed_krw:'시드',available_krw:'사용가능 KRW',realized_pnl_krw:'실현손익',unrealized_pnl_krw:'평가손익',fees_krw:'수수료'};
     node('spotSummary').innerHTML=Object.keys(labels).map(function(key){return '<div class="kv"><span>'+labels[key]+'</span><strong title="'+escapeHtml(String(summary[key]===undefined?'-':summary[key]))+'">'+escapeHtml(compact(summary[key]))+'</strong></div>';}).join('');
     renderCalendar();renderTable();
   }
