@@ -229,6 +229,8 @@ el('appVer').textContent=Kswth.appVersion();el('uiVer').textContent=Kswth.uiVers
 .spot-setting input:disabled,
 .spot-setting select:disabled { opacity: .62; }
 .spot-runtime-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.spot-runtime-details { margin-top: 10px; border-top: 1px solid var(--line); padding-top: 10px; }
+.spot-runtime-details summary { cursor: pointer; color: var(--muted); font-size: 13px; font-weight: 700; margin-bottom: 10px; }
 .spot-runtime-grid .kv { min-width: 0; }
 .spot-runtime-grid strong { white-space: nowrap; overflow: visible; font-size: 12px; }
 .spot-stable-area { min-height: calc(var(--spot-calendar-height) + var(--spot-table-height) + 190px); }
@@ -320,7 +322,7 @@ el('appVer').textContent=Kswth.appVersion();el('uiVer').textContent=Kswth.uiVers
             <label class="spot-setting"><span>종목당 배분 %</span><input id="spotAllocationV2" type="number" min="0.01" max="100" step="0.01"></label>
             <label class="spot-setting"><span>최대 보유 종목</span><input id="spotMaxPositionsV2" type="number" min="1"></label>
             <label class="spot-setting"><span>베이스 탐색 봉</span><input id="spotBaseBarsV2" type="number" min="1"></label>
-            <label class="spot-setting"><span>베이스 상승률 %</span><input id="spotBaseRise" type="number" step="0.01"></label>
+            <label class="spot-setting"><span>기준봉 최소상승률 %</span><input id="spotBaseRise" type="number" step="0.01" title="PC 통합 런타임의 저장값"></label>
             <label class="spot-setting"><span>최소 구조거리 %</span><input id="spotStructureDistance" type="number" step="0.01"></label>
             <label class="spot-setting check"><input id="spotTelegram" type="checkbox">텔레그램</label>
             <label class="spot-setting check"><input id="spotCharts" type="checkbox">차트 전송</label>
@@ -339,17 +341,19 @@ el('appVer').textContent=Kswth.appVersion();el('uiVer').textContent=Kswth.uiVers
       </aside>
       <div class="spot-main">
         <div class="card spot-card">
-          <div class="sectionTitle"><h2>엔진 상태</h2><span id="spotErrorCount" class="badge spot-error-count">오류 0</span></div>
+          <div class="sectionTitle"><h2>엔진 상태</h2><span id="spotErrorCount" class="badge spot-error-count" title="감사 DB에 영구 누적된 ERROR/CRITICAL 건수">누적 오류 0</span></div>
           <div class="spot-runtime-grid">
             <div class="kv"><span>API 연결</span><strong id="spotApiConnected">-</strong></div>
             <div class="kv"><span>재시작 복구</span><strong id="spotRecovery">-</strong></div>
-            <div class="kv"><span>Heartbeat</span><strong id="spotHeartbeat">-</strong></div>
+            <div class="kv"><span>신규진입</span><strong id="spotEntryState">-</strong></div>
             <div class="kv"><span>마지막 완성 4시간봉</span><strong id="spot4h">-</strong></div>
+          </div>
+          <details class="spot-runtime-details"><summary>동기화 상세</summary><div class="spot-runtime-grid">
+            <div class="kv"><span>Heartbeat</span><strong id="spotHeartbeat">-</strong></div>
             <div class="kv"><span>잔고 동기화</span><strong id="spotBalanceSync">-</strong></div>
             <div class="kv"><span>미체결 동기화</span><strong id="spotOrdersSync">-</strong></div>
             <div class="kv"><span>체결 동기화</span><strong id="spotFillsSync">-</strong></div>
-            <div class="kv"><span>신규진입</span><strong id="spotEntryState">-</strong></div>
-          </div>
+          </div></details>
           <div id="spotStatusText" class="hint">상태 조회 전</div>
         </div>
         <div class="card spot-card"><div class="sectionTitle"><h2>06 시장상태</h2><span id="spotBtcMode" class="badge">-</span></div><div id="spotSummary" class="grid"></div></div>
@@ -368,13 +372,13 @@ el('appVer').textContent=Kswth.appVersion();el('uiVer').textContent=Kswth.uiVers
       </div>
       <aside class="spot-right">
         <div class="card spot-card"><div class="sectionTitle"><h2>완성 4시간봉 TAIL 차트</h2></div><div id="spotChartV2" class="spot-chart">후보·주문·보유종목 행을 선택하면 확대 가능한 차트를 받습니다.</div></div>
-        <div class="card spot-card"><div class="sectionTitle"><h2>운영·오류 로그</h2></div><pre id="spotLogsV2" class="response spot-log">로그 동기화 전</pre></div>
       </aside>
     </div>`;
 
   var snapshot = {};
   var activeTable = 'recent_orders';
   var calendarSelection = null;
+  var pendingSpotChart = null;
   var schemas = {
     recent_orders: [['시간',['time','created_at','order_time']],['종목',['symbol','market']],['구분',['event_kind','action','type']],['역할',['role','leg','entry_leg']],['매수매도',['side']],['주문유형',['order_type']],['주문가',['order_price','price']],['체결가',['fill_price']],['주문수량',['order_qty','quantity','qty']],['체결수량',['filled_qty','executed_qty']],['잔량',['remaining_qty','remaining']],['상태',['status','state']],['소유',['ownership','owner','origin']]],
     candidates: [['신호시각',['signal_time','time']],['종목',['symbol','market']],['BTC 필터',['btc_filter','btc_mode','btc_state']],['1차 주문가',['leg1_order_price','leg1_price','entry1_price']],['2차 주문가',['leg2_order_price','leg2_price','entry2_price']],['구조선',['support_price','support','structure_line']],['상태',['status','state']]],
@@ -416,7 +420,17 @@ el('appVer').textContent=Kswth.appVersion();el('uiVer').textContent=Kswth.uiVers
     if(!rows.length){box.className='spot-table empty';box.textContent='데이터 없음';return;}
     box.className='spot-table';
     box.innerHTML='<table><thead><tr>'+schema.map(function(col){return '<th>'+escapeHtml(col[0])+'</th>';}).join('')+'</tr></thead><tbody>'+rows.map(function(row,index){return '<tr data-index="'+index+'">'+schema.map(function(col){var raw=valueOf(row,col[1]);return '<td title="'+escapeHtml(String(raw))+'">'+escapeHtml(compact(raw))+'</td>';}).join('')+'</tr>';}).join('')+'</tbody></table>';
-    box.querySelectorAll('tbody tr').forEach(function(rowNode){rowNode.onclick=function(){var row=rows[Number(rowNode.dataset.index)],market=marketOf(row);if(!market)return;setText('spotChartV2',market+' · 완성 4시간봉 차트 요청 중…');if(typeof Kswth.spotChartRequest==='function')Kswth.spotChartRequest(market,JSON.stringify(row));else Kswth.chartRequest('spot',market);};});
+    box.querySelectorAll('tbody tr').forEach(function(rowNode){rowNode.onclick=function(){var row=rows[Number(rowNode.dataset.index)],market=marketOf(row);if(!market)return;pendingSpotChart={market:market,row:row};setText('spotChartV2',market+' · 완성 4시간봉 차트 준비 중…');clearTimeout(autoSyncTimer);dispatchSpotChart();};});
+  }
+
+  function dispatchSpotChart() {
+    if(!pendingSpotChart||syncActive)return;
+    var request=pendingSpotChart;pendingSpotChart=null;
+    clearTimeout(autoSyncTimer);
+    startSyncProgress(false);
+    setText('spotChartV2',request.market+' · 완성 4시간봉 차트 요청 중…');
+    if(typeof Kswth.spotChartRequest==='function')Kswth.spotChartRequest(request.market,JSON.stringify(request.row));
+    else Kswth.chartRequest('spot',request.market);
   }
 
   function renderCalendar() {
@@ -444,14 +458,14 @@ el('appVer').textContent=Kswth.appVersion();el('uiVer').textContent=Kswth.uiVers
     var lifecycle=String(snapshot.lifecycle||(snapshot.exit_only?'EXIT_ONLY':snapshot.running?'RUNNING':'STOPPED')).toUpperCase();
     setText('spotLastSync',kst(publicStatus.published_at_utc||serverTime));node('spotDisconnected').className='spot-disconnected'+(isStale?' show':'');
     setText('spotLifecycle',isStale?'DISCONNECTED':lifecycle);node('spotLifecycle').className='badge spot-state '+(isStale?'DISCONNECTED':lifecycle);
-    setText('spotErrorCount','오류 '+Number(snapshot.error_count||0));setText('spotStatusText',isStale?'PC 상태 시각이 오래되었습니다. 최신 응답 전에는 값을 표시하지 않습니다.':snapshot.status||'-');
+    setText('spotErrorCount','누적 오류 '+Number(snapshot.error_count||0));setText('spotStatusText',isStale?'PC 상태 시각이 오래되었습니다. 최신 응답 전에는 값을 표시하지 않습니다.':snapshot.status||'-');
     input('spotApi',(api.credentials_present?'API 저장됨':'API 저장 안 됨')+(api.telegram_credentials_present?' · Telegram 저장됨':''));input('spotModeV2',settings.mode||snapshot.mode||'LIVE');input('spotAutoStartV2',settings.auto_start_enabled,true);input('spotSeedV2',settings.fixed_seed_krw);input('spotAllocationV2',settings.allocation_pct);input('spotMaxPositionsV2',settings.max_positions);input('spotBaseBarsV2',settings.base_search_bars);input('spotBaseRise',settings.base_rise_pct);input('spotStructureDistance',settings.min_initial_structure_distance_pct);input('spotTelegram',settings.telegram_enabled,true);input('spotCharts',settings.chart_notifications_enabled,true);input('spotLimitRefresh',settings.limit_refresh_enabled,true);input('spotLimitSeconds',settings.limit_refresh_seconds);input('spotMarketFallback',settings.market_fallback_enabled,true);input('spotMarketSeconds',settings.market_fallback_seconds);input('spotExitType',settings.protective_exit_order_type||'LIMIT');input('spotExitTicks',settings.protective_limit_offset_ticks);input('spotStopPolicy',settings.stop_policy||'PRESERVE');
     var locked=!!snapshot.running;setText('spotSettingsLock',locked?'엔진 실행 중':'변경 가능');node('spotSaveV2').disabled=locked;page.querySelectorAll('.spot-setting input:not([readonly]),.spot-setting select').forEach(function(control){control.disabled=locked;});
     if(isStale){clearLive();return;}
     setText('spotApiConnected',snapshot.connected||api.connected?'연결':'미연결');setText('spotRecovery',publicStatus.recovery_state||runtime.recovery_status||'-');setText('spotHeartbeat',kst(publicStatus.protection_heartbeat_at_utc||runtime.scheduler_heartbeat));setText('spot4h',kst(publicStatus.last_completed_4h_slot||market.last_completed_4h));setText('spotBalanceSync',kst(publicStatus.balance_sync_at_utc||runtime.balance_sync_at));setText('spotOrdersSync',kst(publicStatus.open_orders_sync_at_utc||runtime.open_orders_sync_at));setText('spotFillsSync',kst(publicStatus.fills_sync_at_utc||runtime.fills_sync_at));setText('spotEntryState',snapshot.entry_paused?'신규진입 중지':'신규진입 허용');setText('spotBtcMode',market.btc_mode||'-');
     var summary=snapshot.summary||{},labels={fixed_seed_krw:'시드',available_krw:'사용가능 KRW',realized_pnl_krw:'실현손익',unrealized_pnl_krw:'평가손익',fees_krw:'수수료'};
     node('spotSummary').innerHTML=Object.keys(labels).map(function(key){return '<div class="kv"><span>'+labels[key]+'</span><strong title="'+escapeHtml(String(summary[key]===undefined?'-':summary[key]))+'">'+escapeHtml(compact(summary[key]))+'</strong></div>';}).join('');
-    renderCalendar();renderTable();var logs=(snapshot.errors||[]).concat(snapshot.logs||[]).slice(-40).reverse();setText('spotLogsV2',logs.length?logs.join('\n'):'로그 없음');
+    renderCalendar();renderTable();
   }
   function saveSettings() {
     var data={fixed_seed_krw:Number(node('spotSeedV2').value),allocation_pct:Number(node('spotAllocationV2').value),max_positions:Number(node('spotMaxPositionsV2').value),base_search_bars:Number(node('spotBaseBarsV2').value),base_rise_pct:Number(node('spotBaseRise').value),min_initial_structure_distance_pct:node('spotStructureDistance').value===''?null:Number(node('spotStructureDistance').value),telegram_enabled:node('spotTelegram').checked,chart_notifications_enabled:node('spotCharts').checked,limit_refresh_enabled:node('spotLimitRefresh').checked,limit_refresh_seconds:Number(node('spotLimitSeconds').value),market_fallback_enabled:node('spotMarketFallback').checked,market_fallback_seconds:Number(node('spotMarketSeconds').value),protective_exit_order_type:node('spotExitType').value,protective_limit_offset_ticks:Number(node('spotExitTicks').value),auto_start_enabled:node('spotAutoStartV2').checked,stop_policy:node('spotStopPolicy').value};
@@ -465,7 +479,7 @@ el('appVer').textContent=Kswth.appVersion();el('uiVer').textContent=Kswth.uiVers
   page.querySelectorAll('[data-spot-table]').forEach(function(button){button.onclick=function(){activeTable=button.dataset.spotTable;page.querySelectorAll('[data-spot-table]').forEach(function(item){item.classList.toggle('active',item===button);});renderTable();};});
 
   var priorResult=window.kswthMtsResult;
-  window.kswthMtsResult=function(raw){priorResult(raw);try{var result=JSON.parse(raw),root=result.snapshot||{};if(root.spot)renderSpot(root.spot,root.server_time);if(result.chart_url)setText('spotChartV2',(result.chart_name||'4H TAIL 차트')+' · 확대 화면으로 전송 완료');}catch(ignore){}};
+  window.kswthMtsResult=function(raw){priorResult(raw);try{var result=JSON.parse(raw),root=result.snapshot||{};if(root.spot)renderSpot(root.spot,root.server_time);if(result.chart_url)setText('spotChartV2',(result.chart_name||'4H TAIL 차트')+' · 확대 화면으로 전송 완료');}catch(ignore){}finally{setTimeout(dispatchSpotChart,50);}};
   if(location.hash==='#spot'||location.search.indexOf('page=spot')>=0){var navButton=document.querySelector('[data-page="spot"]');showPage('spot',navButton);setTimeout(function(){window.scrollTo(0,0);},20);}
 })();
 
