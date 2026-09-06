@@ -257,7 +257,20 @@ el('appVer').textContent=Kswth.appVersion();el('uiVer').textContent=Kswth.uiVers
 .spot-chart { min-height: var(--spot-chart-height); display: grid; place-items: center; border: 1px dashed #28617d; border-radius: 9px; color: #7894a8; padding: 16px; text-align: center; }
 .spot-log { max-height: 190px; overflow: auto; }
 .spot-error-count { color: var(--spot-bad); }
-.nav button[data-page="spot"]:before { content: "●"; color: #f5a623; }
+.nav button[data-page="spot"]:before {
+  content: "₩";
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+  color: #6f93a9;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1;
+}
+.nav button[data-page="spot"].active:before { color: #70e5ff; }
 
 @media (min-width: 900px) and (orientation: landscape) {
   .app { max-width: 1500px; }
