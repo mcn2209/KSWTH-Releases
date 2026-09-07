@@ -608,6 +608,9 @@ body.spot-modal-open { overflow: hidden; }
     if(!stamp) return true;
     var date=new Date(stamp); return isNaN(date.getTime())||Date.now()-date.getTime()>15000;
   }
+  function present(value) {
+    return value!==undefined&&value!==null&&String(value).trim()!=='';
+  }
   function input(id, value, checkbox) { var n=node(id); if(!n)return; if(checkbox)n.checked=!!value; else n.value=value===undefined||value===null?'':value; }
 
   function closeSpotChart() {
@@ -683,12 +686,18 @@ body.spot-modal-open { overflow: hidden; }
   function renderSpot(s, serverTime) {
     snapshot=s||{};snapshot._server_time=serverTime||'';
     var isStale=stale(snapshot),publicStatus=snapshot.public_status||{},runtime=snapshot.runtime_status||{},market=snapshot.market||{},api=snapshot.api||{},settings=snapshot.settings||{};
-    var lifecycle=String(snapshot.lifecycle||(snapshot.exit_only?'EXIT_ONLY':snapshot.running?'RUNNING':'STOPPED')).toUpperCase();
+    var lifecycle=String(publicStatus.lifecycle||snapshot.lifecycle||(snapshot.exit_only?'EXIT_ONLY':snapshot.running?'RUNNING':'STOPPED')).toUpperCase();
     setText('spotLastSync',kst(publicStatus.published_at_utc||serverTime));node('spotDisconnected').className='spot-disconnected'+(isStale?' show':'');
     setText('spotLifecycle',isStale?'DISCONNECTED':lifecycle);node('spotLifecycle').className='badge spot-state '+(isStale?'DISCONNECTED':lifecycle);
-    var summary=snapshot.summary||{}, positionCount=(snapshot.positions||[]).length, connected=!!(snapshot.connected||api.connected);
+    var summary=snapshot.summary||{}, listedPositions=(snapshot.positions||[]).length;
+    var publicPositionCount=Number(publicStatus.active_plan_count);
+    var positionCount=Number.isFinite(publicPositionCount)?Math.max(listedPositions,publicPositionCount):listedPositions;
+    var connected=!!(publicStatus.api_connected||snapshot.connected||api.connected);
+    var available=summary.available_krw;
+    if(!present(available))available=snapshot.effective_available_krw;
+    if(!present(available))available=snapshot.account_available_krw;
     setText('homeSpot',isStale?'연결 끊김':(lifecycle==='RUNNING'?'● 실행 중':lifecycle));
-    setText('homeSpotAvailable',isStale?'-':compact(summary.available_krw)+' KRW');
+    setText('homeSpotAvailable',isStale?'-':(present(available)?compact(available)+' KRW':'조회 대기'));
     setText('homeSpotPositions',isStale?'-':positionCount+'종목');
     setText('homeSpotConnection',isStale?'데이터 지연':(connected?'ONLINE':'미연결'));
     if(node('homeSpot'))node('homeSpot').className=!isStale&&lifecycle==='RUNNING'?'healthy':(isStale?'warning':'');
@@ -697,7 +706,7 @@ body.spot-modal-open { overflow: hidden; }
     input('spotApi',(api.credentials_present?'API 저장됨':'API 저장 안 됨')+(api.telegram_credentials_present?' · Telegram 저장됨':''));input('spotModeV2',settings.mode||snapshot.mode||'LIVE');input('spotAutoStartV2',settings.auto_start_enabled,true);input('spotSeedV2',settings.fixed_seed_krw);input('spotAllocationV2',settings.allocation_pct);input('spotMaxPositionsV2',settings.max_positions);input('spotBaseBarsV2',settings.base_search_bars);input('spotBaseRise',settings.base_rise_pct);input('spotStructureDistance',settings.min_initial_structure_distance_pct);input('spotTelegram',settings.telegram_enabled,true);input('spotCharts',settings.chart_notifications_enabled,true);input('spotLimitRefresh',settings.limit_refresh_enabled,true);input('spotLimitSeconds',settings.limit_refresh_seconds);input('spotMarketFallback',settings.market_fallback_enabled,true);input('spotMarketSeconds',settings.market_fallback_seconds);input('spotExitType',settings.protective_exit_order_type||'LIMIT');input('spotExitTicks',settings.protective_limit_offset_ticks);input('spotStopPolicy',settings.stop_policy||'PRESERVE');
     var locked=!!snapshot.running;setText('spotSettingsLock',locked?'엔진 실행 중':'변경 가능');node('spotSaveV2').disabled=locked;page.querySelectorAll('.spot-setting input:not([readonly]),.spot-setting select').forEach(function(control){control.disabled=locked;});
     if(isStale){clearLive();return;}
-    setText('spotApiConnected',snapshot.connected||api.connected?'연결':'미연결');setText('spotRecovery',publicStatus.recovery_state||runtime.recovery_status||'-');setText('spotHeartbeat',kst(publicStatus.protection_heartbeat_at_utc||runtime.scheduler_heartbeat));setText('spot4h',kst(publicStatus.last_completed_4h_slot||market.last_completed_4h));setText('spotBalanceSync',kst(publicStatus.balance_sync_at_utc||runtime.balance_sync_at));setText('spotOrdersSync',kst(publicStatus.open_orders_sync_at_utc||runtime.open_orders_sync_at));setText('spotFillsSync',kst(publicStatus.fills_sync_at_utc||runtime.fills_sync_at));setText('spotEntryState',snapshot.entry_paused?'신규진입 중지':'신규진입 허용');setText('spotBtcMode',market.btc_mode||'-');
+    setText('spotApiConnected',connected?'연결':'미연결');setText('spotRecovery',publicStatus.recovery_state||runtime.recovery_status||'-');setText('spotHeartbeat',kst(publicStatus.protection_heartbeat_at_utc||runtime.scheduler_heartbeat));setText('spot4h',kst(publicStatus.last_completed_4h_slot||market.last_completed_4h));setText('spotBalanceSync',kst(publicStatus.balance_sync_at_utc||runtime.balance_sync_at));setText('spotOrdersSync',kst(publicStatus.open_orders_sync_at_utc||runtime.open_orders_sync_at));setText('spotFillsSync',kst(publicStatus.fills_sync_at_utc||runtime.fills_sync_at));setText('spotEntryState',snapshot.entry_paused?'신규진입 중지':'신규진입 허용');setText('spotBtcMode',market.btc_mode||'-');
     var labels={fixed_seed_krw:'시드',available_krw:'사용가능 KRW',realized_pnl_krw:'실현손익',unrealized_pnl_krw:'평가손익',fees_krw:'수수료'};
     node('spotSummary').innerHTML=Object.keys(labels).map(function(key){return '<div class="kv"><span>'+labels[key]+'</span><strong title="'+escapeHtml(String(summary[key]===undefined?'-':summary[key]))+'">'+escapeHtml(compact(summary[key]))+'</strong></div>';}).join('');
     renderCalendar();renderTable();
