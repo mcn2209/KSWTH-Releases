@@ -520,7 +520,6 @@ body.spot-modal-open { overflow: hidden; }
           <div class="spot-settings-grid">
             <label class="spot-setting"><span>API</span><input id="spotApi" readonly value="저장 안 됨"></label>
             <label class="spot-setting"><span>실행 모드</span><input id="spotModeV2" readonly value="LIVE"></label>
-            <label class="spot-setting check"><input id="spotAutoStartV2" type="checkbox">자동시작</label>
             <label class="spot-setting"><span>고정 시드 KRW</span><input id="spotSeedV2" type="number" min="0"></label>
             <label class="spot-setting"><span>종목당 배분 %</span><input id="spotAllocationV2" type="number" min="0.01" max="100" step="0.01"></label>
             <label class="spot-setting"><span>최대 보유 종목</span><input id="spotMaxPositionsV2" type="number" min="1"></label>
@@ -703,7 +702,7 @@ body.spot-modal-open { overflow: hidden; }
     if(node('homeSpot'))node('homeSpot').className=!isStale&&lifecycle==='RUNNING'?'healthy':(isStale?'warning':'');
     if(node('homeSpotConnection'))node('homeSpotConnection').className=!isStale&&connected?'healthy':'warning';
     setText('spotErrorCount','누적 오류 '+Number(snapshot.error_count||0));setText('spotStatusText',isStale?'PC 상태 시각이 오래되었습니다. 최신 응답 전에는 값을 표시하지 않습니다.':snapshot.status||'-');
-    input('spotApi',(api.credentials_present?'API 저장됨':'API 저장 안 됨')+(api.telegram_credentials_present?' · Telegram 저장됨':''));input('spotModeV2',settings.mode||snapshot.mode||'LIVE');input('spotAutoStartV2',settings.auto_start_enabled,true);input('spotSeedV2',settings.fixed_seed_krw);input('spotAllocationV2',settings.allocation_pct);input('spotMaxPositionsV2',settings.max_positions);input('spotBaseBarsV2',settings.base_search_bars);input('spotBaseRise',settings.base_rise_pct);input('spotStructureDistance',settings.min_initial_structure_distance_pct);input('spotTelegram',settings.telegram_enabled,true);input('spotCharts',settings.chart_notifications_enabled,true);input('spotLimitRefresh',settings.limit_refresh_enabled,true);input('spotLimitSeconds',settings.limit_refresh_seconds);input('spotMarketFallback',settings.market_fallback_enabled,true);input('spotMarketSeconds',settings.market_fallback_seconds);input('spotExitType',settings.protective_exit_order_type||'LIMIT');input('spotExitTicks',settings.protective_limit_offset_ticks);input('spotStopPolicy',settings.stop_policy||'PRESERVE');
+    input('spotApi',(api.credentials_present?'API 저장됨':'API 저장 안 됨')+(api.telegram_credentials_present?' · Telegram 저장됨':''));input('spotModeV2',settings.mode||snapshot.mode||'LIVE');input('spotSeedV2',settings.fixed_seed_krw);input('spotAllocationV2',settings.allocation_pct);input('spotMaxPositionsV2',settings.max_positions);input('spotBaseBarsV2',settings.base_search_bars);input('spotBaseRise',settings.base_rise_pct);input('spotStructureDistance',settings.min_initial_structure_distance_pct);input('spotTelegram',settings.telegram_enabled,true);input('spotCharts',settings.chart_notifications_enabled,true);input('spotLimitRefresh',settings.limit_refresh_enabled,true);input('spotLimitSeconds',settings.limit_refresh_seconds);input('spotMarketFallback',settings.market_fallback_enabled,true);input('spotMarketSeconds',settings.market_fallback_seconds);input('spotExitType',settings.protective_exit_order_type||'LIMIT');input('spotExitTicks',settings.protective_limit_offset_ticks);input('spotStopPolicy',settings.stop_policy||'PRESERVE');
     var locked=!!snapshot.running;setText('spotSettingsLock',locked?'엔진 실행 중':'변경 가능');node('spotSaveV2').disabled=locked;page.querySelectorAll('.spot-setting input:not([readonly]),.spot-setting select').forEach(function(control){control.disabled=locked;});
     if(isStale){clearLive();return;}
     setText('spotApiConnected',connected?'연결':'미연결');setText('spotRecovery',publicStatus.recovery_state||runtime.recovery_status||'-');setText('spotHeartbeat',kst(publicStatus.protection_heartbeat_at_utc||runtime.scheduler_heartbeat));setText('spot4h',kst(publicStatus.last_completed_4h_slot||market.last_completed_4h));setText('spotBalanceSync',kst(publicStatus.balance_sync_at_utc||runtime.balance_sync_at));setText('spotOrdersSync',kst(publicStatus.open_orders_sync_at_utc||runtime.open_orders_sync_at));setText('spotFillsSync',kst(publicStatus.fills_sync_at_utc||runtime.fills_sync_at));setText('spotEntryState',snapshot.entry_paused?'신규진입 중지':'신규진입 허용');setText('spotBtcMode',market.btc_mode||'-');
@@ -712,7 +711,7 @@ body.spot-modal-open { overflow: hidden; }
     renderCalendar();renderTable();
   }
   function saveSettings() {
-    var data={fixed_seed_krw:Number(node('spotSeedV2').value),allocation_pct:Number(node('spotAllocationV2').value),max_positions:Number(node('spotMaxPositionsV2').value),auto_start_enabled:node('spotAutoStartV2').checked};
+    var data={fixed_seed_krw:Number(node('spotSeedV2').value),allocation_pct:Number(node('spotAllocationV2').value),max_positions:Number(node('spotMaxPositionsV2').value),auto_start_enabled:true};
     Kswth.mtsSpotSettings(JSON.stringify(data));
   }
 
