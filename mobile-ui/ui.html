@@ -744,6 +744,56 @@ body.spot-modal-open { overflow: hidden; }
 })();
 
 </script>
+<script id="coin-futures-calendar-v196">
+(function () {
+  'use strict';
+  var page=document.getElementById('coin'), updated=document.getElementById('coinPerformanceUpdated');
+  var anchor=updated&&updated.closest('.card');
+  if(!page||!anchor||document.getElementById('coinFuturesCalendar'))return;
+  var card=document.createElement('section');
+  card.className='card';
+  card.id='coinFuturesCalendar';
+  card.innerHTML='<div class="sectionTitle"><h2>코인선물 수익 달력</h2><span id="coinCalendarUpdated" class="badge">집계 중</span></div><div class="spot-calendar-head"><button id="coinPrevMonth" class="ghost" type="button">‹</button><b id="coinCalendarTitle">-</b><button id="coinNextMonth" class="ghost" type="button">›</button></div><div id="coinCalendar" class="spot-calendar"></div><div class="spot-totals"><div class="kv"><span>월 누적</span><strong id="coinCalendarMonthTotal">-</strong></div><div class="kv"><span>연 누적</span><strong id="coinCalendarYearTotal">-</strong></div></div><div class="dangerNote">Binance 선물 실현손익에 수수료와 펀딩비를 포함한 일별 순손익입니다.</div>';
+  anchor.insertAdjacentElement('afterend',card);
+  var selection=null, performance={};
+  function money(value){var n=Number(value||0);return(n>0?'+':'')+n.toLocaleString('ko-KR',{minimumFractionDigits:2,maximumFractionDigits:2})+' USDT'}
+  function pct(value){var n=Number(value||0);return(n>0?'+':'')+n.toFixed(2)+'%'}
+  function paint(id,value){var n=Number(value||0),element=document.getElementById(id);if(!element)return;element.classList.remove('spot-positive','spot-negative');if(n>0)element.classList.add('spot-positive');else if(n<0)element.classList.add('spot-negative')}
+  function rowsFor(year,month){
+    var byMonth=performance.days_by_month||{}, rows=byMonth[month]||byMonth[String(month)]||null;
+    if(!rows&&Number(performance.year)===year&&Number(performance.month)===month)rows=performance.days||{};
+    return rows||{};
+  }
+  function render(){
+    var now=new Date(),baseYear=Number(performance.year||now.getFullYear()),baseMonth=Number(performance.month||now.getMonth()+1);
+    var year=selection?selection.year:baseYear,month=selection?selection.month:baseMonth;selection={year:year,month:month};
+    document.getElementById('coinCalendarTitle').textContent=year+'년 '+String(month).padStart(2,'0')+'월';
+    var first=new Date(year,month-1,1),last=new Date(year,month,0).getDate(),lead=(first.getDay()+6)%7,cells=[],i;
+    for(i=0;i<lead;i++)cells.push(0);for(i=1;i<=last;i++)cells.push(i);while(cells.length<42)cells.push(0);
+    var rows=rowsFor(year,month),html='<div class="spot-weekdays">'+['월','화','수','목','금','토','일'].map(function(day){return '<div class="spot-day">'+day+'</div>';}).join('')+'</div>';
+    for(i=0;i<6;i++)html+='<div class="spot-week">'+cells.slice(i*7,i*7+7).map(function(day){
+      if(!day)return '<div class="spot-day"></div>';
+      var record=rows[day]||rows[String(day)]||null,recordDate=new Date(year,month-1,day),today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+      var available=!!record&&record.available!==false&&recordDate<=today,profit=Number((record||{}).profit||0),kind=profit>0?'pos':profit<0?'neg':'';
+      return '<div class="spot-day '+kind+'"><b>'+day+'</b><span>'+(available?money(profit):'-')+'</span></div>';
+    }).join('')+'</div>';
+    document.getElementById('coinCalendar').innerHTML=html;
+    var monthly=performance.monthly||{},monthRecord=monthly[month]||monthly[String(month)]||{};
+    var current=year===baseYear&&month===baseMonth,monthProfit=Number(monthRecord.profit!==undefined?monthRecord.profit:(current?performance.month_profit:0));
+    var monthReturn=Number(monthRecord.return_pct!==undefined?monthRecord.return_pct:(current?performance.month_return_pct:0));
+    var yearProfit=year===baseYear?Number(performance.year_profit||0):0,yearReturn=year===baseYear?Number(performance.year_return_pct||0):0;
+    document.getElementById('coinCalendarMonthTotal').textContent=performance.ready?(pct(monthReturn)+' · '+money(monthProfit)):'-';
+    document.getElementById('coinCalendarYearTotal').textContent=performance.ready&&year===baseYear?(pct(yearReturn)+' · '+money(yearProfit)):'-';
+    document.getElementById('coinCalendarUpdated').textContent=performance.ready?'집계 완료':'집계 중';
+    paint('coinCalendarMonthTotal',monthProfit||monthReturn);paint('coinCalendarYearTotal',yearProfit||yearReturn);
+  }
+  document.getElementById('coinPrevMonth').onclick=function(){var d=new Date(selection.year,selection.month-2,1);selection={year:d.getFullYear(),month:d.getMonth()+1};render()};
+  document.getElementById('coinNextMonth').onclick=function(){var d=new Date(selection.year,selection.month,1);selection={year:d.getFullYear(),month:d.getMonth()+1};render()};
+  var base=window.kswthMtsResult;
+  window.kswthMtsResult=function(raw){base(raw);try{var result=JSON.parse(raw),coin=((result.snapshot||{}).coin||{});performance=coin.performance||{};render()}catch(ignore){}};
+  render();
+})();
+</script>
 <script id="domestic-account-calendar-v142">
 (function () {
   'use strict';
@@ -781,4 +831,3 @@ body.spot-modal-open { overflow: hidden; }
 })();
 </script>
 </body></html>
-
