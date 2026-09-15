@@ -832,7 +832,7 @@ body.spot-modal-open { overflow: hidden; }
     document.getElementById('stockMonthTotal').textContent=performance.ready?(pct(monthReturn)+' · '+money(monthProfit)):'-';
     document.getElementById('stockYearTotal').textContent=performance.ready?(pct(yearReturn)+' · '+money(yearProfit)):'-';
     paint('stockMonthTotal',monthProfit||monthReturn);paint('stockYearTotal',yearProfit||yearReturn);
-    document.getElementById('stockCalendarUpdated').textContent=window.selectedDomesticAccount+'계좌 '+(performance.ready?'집계 완료':'집계 중');
+    document.getElementById('stockCalendarUpdated').textContent=performance.ready?'집계 완료':'집계 중';
   }
   document.getElementById('stockPrevMonth').onclick=function(){var d=new Date(selection.year,selection.month-2,1);selection={year:d.getFullYear(),month:d.getMonth()+1};render()};
   document.getElementById('stockNextMonth').onclick=function(){var d=new Date(selection.year,selection.month,1);selection={year:d.getFullYear(),month:d.getMonth()+1};render()};
