@@ -410,6 +410,8 @@ body.mts-chart-open { overflow: hidden; }
 .spot-weekdays { background: #102b40; }
 .spot-day { min-width: 0; min-height: 0; padding: 3px 3px; border-right: 1px solid #153548; border-bottom: 1px solid #153548; text-align: center; font-size: 10px; line-height: 1.25; color: #7f9aac; overflow: hidden; }
 .spot-day b { display: block; font-size: 11px; line-height: 1.25; color: #bed9e8; }
+.spot-day span { display: block; white-space: nowrap; }
+.spot-day small { display: block; font-size: 9px; line-height: 1.15; color: inherit; }
 .spot-day.pos span,
 .spot-positive { color: var(--spot-profit) !important; }
 .spot-day.neg span,
@@ -550,10 +552,11 @@ body.spot-modal-open { overflow: hidden; }
         <div class="card spot-card"><div class="sectionTitle"><h2>06 시장상태</h2><span id="spotBtcMode" class="badge">-</span></div><div id="spotSummary" class="grid"></div></div>
         <div class="spot-stable-area">
           <div class="card spot-card">
-            <div class="sectionTitle"><h2>07 수익 달력</h2></div>
+            <div class="sectionTitle"><h2>빗썸현물 수익 달력</h2><span id="spotCalendarUpdated" class="badge">집계 중</span></div>
             <div class="spot-calendar-head"><button id="spotPrevMonth" class="ghost" type="button">‹</button><b id="spotCalendarTitle">-</b><button id="spotNextMonth" class="ghost" type="button">›</button></div>
             <div id="spotCalendar" class="spot-calendar"></div>
             <div class="spot-totals"><div class="kv"><span>월 누적</span><strong id="spotMonthTotal">-</strong></div><div class="kv"><span>연 누적</span><strong id="spotYearTotal">-</strong></div></div>
+            <div class="dangerNote">Bithumb KRW 현물 실현손익에 수수료를 포함한 일별 순손익입니다.</div>
           </div>
           <div class="card spot-card">
             <div class="spot-tabs"><button class="active" data-spot-table="recent_orders">주문</button><button data-spot-table="candidates">후보</button><button data-spot-table="pending_orders">매수대기</button><button data-spot-table="positions">보유종목</button><button data-spot-table="audit_events">감사</button></div>
@@ -680,7 +683,7 @@ body.spot-modal-open { overflow: hidden; }
     for(i=0;i<lead;i++)cells.push(0);for(i=1;i<=last;i++)cells.push(i);while(cells.length<42)cells.push(0);
     var byMonth=performance.days_by_month||{},days=byMonth[month]||byMonth[String(month)]||{};
     var html='<div class="spot-weekdays">'+['월','화','수','목','금','토','일'].map(function(day){return '<div class="spot-day">'+day+'</div>';}).join('')+'</div>';
-    for(i=0;i<6;i++)html+='<div class="spot-week">'+cells.slice(i*7,i*7+7).map(function(day){if(!day)return '<div class="spot-day"></div>';var record=days[day]||days[String(day)]||null,available=!!record&&record.available!==false,profit=Number((record||{}).profit||0),kind=profit>0?'pos':profit<0?'neg':'';return '<div class="spot-day '+kind+'"><b>'+day+'</b><span>'+(available?compact(profit):'-')+'</span></div>';}).join('')+'</div>';
+    for(i=0;i<6;i++)html+='<div class="spot-week">'+cells.slice(i*7,i*7+7).map(function(day){if(!day)return '<div class="spot-day"></div>';var record=days[day]||days[String(day)]||null,available=!!record&&record.available!==false,profit=Number((record||{}).profit||0),kind=profit>0?'pos':profit<0?'neg':'',amount=(profit>0?'+':'')+profit.toLocaleString('ko-KR',{maximumFractionDigits:0});return '<div class="spot-day '+kind+'"><b>'+day+'</b><span>'+(available?amount+'<small>KRW</small>':'-')+'</span></div>';}).join('')+'</div>';
     node('spotCalendar').innerHTML=html;
     var monthly=performance.monthly||{},record=monthly[month]||monthly[String(month)]||{},monthReturn=Number(record.cumulative_return_pct||record.return_pct||0),yearReturn=Number(performance.year_return_pct||0);
     var monthProfit=Number(record.cumulative_profit||record.profit||0),yearProfit=Number(performance.year_profit||0);
@@ -688,6 +691,7 @@ body.spot-modal-open { overflow: hidden; }
     setText('spotYearTotal',(yearReturn>=0?'+':'')+yearReturn.toFixed(2)+'% · '+compact(yearProfit)+' KRW');
     paintSigned('spotMonthTotal',monthProfit!==0?monthProfit:monthReturn);
     paintSigned('spotYearTotal',yearProfit!==0?yearProfit:yearReturn);
+    setText('spotCalendarUpdated',performance.ready?'집계 완료':'집계 중');
   }
 
   function shiftMonth(offset) { var current=calendarSelection||{year:new Date().getFullYear(),month:new Date().getMonth()+1}, date=new Date(current.year,current.month-1+offset,1);calendarSelection={year:date.getFullYear(),month:date.getMonth()+1};renderCalendar(); }
@@ -776,7 +780,8 @@ body.spot-modal-open { overflow: hidden; }
       if(!day)return '<div class="spot-day"></div>';
       var record=rows[day]||rows[String(day)]||null,recordDate=new Date(year,month-1,day),today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
       var available=!!record&&record.available!==false&&recordDate<=today,profit=Number((record||{}).profit||0),kind=profit>0?'pos':profit<0?'neg':'';
-      return '<div class="spot-day '+kind+'"><b>'+day+'</b><span>'+(available?money(profit):'-')+'</span></div>';
+      var amount=(profit>0?'+':'')+profit.toLocaleString('ko-KR',{minimumFractionDigits:2,maximumFractionDigits:2});
+      return '<div class="spot-day '+kind+'"><b>'+day+'</b><span>'+(available?amount+'<small>USDT</small>':'-')+'</span></div>';
     }).join('')+'</div>';
     document.getElementById('coinCalendar').innerHTML=html;
     var monthly=performance.monthly||{},monthRecord=monthly[month]||monthly[String(month)]||{};
@@ -803,24 +808,30 @@ body.spot-modal-open { overflow: hidden; }
   var card=document.createElement('section');
   card.className='card';
   card.id='stockAccountCalendar';
-  card.innerHTML='<div class="sectionTitle"><h2>국내주식 계좌별 수익 달력</h2><span id="stockCalendarUpdated" class="badge">집계 중</span></div><div class="spot-calendar-head"><button id="stockPrevMonth" class="ghost" type="button">‹</button><b id="stockCalendarTitle">-</b><button id="stockNextMonth" class="ghost" type="button">›</button></div><div id="stockCalendar" class="spot-calendar"></div><div class="spot-totals"><div class="kv"><span>월 순실현손익</span><strong id="stockMonthTotal">-</strong></div><div class="kv"><span>연 순실현손익</span><strong id="stockYearTotal">-</strong></div></div><div class="dangerNote">선택한 T/R 계좌의 키움 매도 체결일 기준입니다. 수수료·세금 차감 순실현손익이며 평가손익은 제외합니다.</div>';
+  card.innerHTML='<div class="sectionTitle"><h2>국내주식 수익 달력</h2><span id="stockCalendarUpdated" class="badge">집계 중</span></div><div class="spot-calendar-head"><button id="stockPrevMonth" class="ghost" type="button">‹</button><b id="stockCalendarTitle">-</b><button id="stockNextMonth" class="ghost" type="button">›</button></div><div id="stockCalendar" class="spot-calendar"></div><div class="spot-totals"><div class="kv"><span>월 누적</span><strong id="stockMonthTotal">-</strong></div><div class="kv"><span>연 누적</span><strong id="stockYearTotal">-</strong></div></div><div class="dangerNote">선택한 T/R 계좌의 키움 매도 체결일 기준 일별 순실현손익이며 평가손익은 제외합니다.</div>';
   anchor.insertAdjacentElement('afterend',card);
   var selection=null;
   function money(value){var n=Number(value||0);return(n>0?'+':'')+n.toLocaleString('ko-KR',{maximumFractionDigits:0})+'원'}
+  function pct(value){var n=Number(value||0);return(n>0?'+':'')+n.toFixed(2)+'%'}
+  function paint(id,value){var n=Number(value||0),element=document.getElementById(id);if(!element)return;element.classList.remove('spot-positive','spot-negative');if(n>0)element.classList.add('spot-positive');else if(n<0)element.classList.add('spot-negative')}
   function render(){
     var views=((window.lastDomesticSnapshot||{}).account_views||{}),view=views[window.selectedDomesticAccount]||{},performance=view.performance||{};
     var year=selection?selection.year:Number(performance.year||new Date().getFullYear()),month=selection?selection.month:Number(performance.month||new Date().getMonth()+1);selection={year:year,month:month};
-    document.getElementById('stockCalendarTitle').textContent=year+'년 '+String(month).padStart(2,'0')+'월 · '+window.selectedDomesticAccount+'계좌';
+    document.getElementById('stockCalendarTitle').textContent=year+'년 '+String(month).padStart(2,'0')+'월';
     var first=new Date(year,month-1,1),last=new Date(year,month,0).getDate(),lead=(first.getDay()+6)%7,cells=[],i;
     for(i=0;i<lead;i++)cells.push(0);for(i=1;i<=last;i++)cells.push(i);while(cells.length<42)cells.push(0);
     var byMonth=performance.days_by_month||{},days=byMonth[month]||byMonth[String(month)]||{};
     var html='<div class="spot-weekdays">'+['월','화','수','목','금','토','일'].map(function(day){return '<div class="spot-day">'+day+'</div>';}).join('')+'</div>';
-    for(i=0;i<6;i++)html+='<div class="spot-week">'+cells.slice(i*7,i*7+7).map(function(day){if(!day)return '<div class="spot-day"></div>';var record=days[day]||days[String(day)]||null,available=!!record&&record.available!==false,profit=Number((record||{}).profit||0),kind=profit>0?'pos':profit<0?'neg':'';return '<div class="spot-day '+kind+'"><b>'+day+'</b><span>'+(available?money(profit):'-')+'</span></div>';}).join('')+'</div>';
+    for(i=0;i<6;i++)html+='<div class="spot-week">'+cells.slice(i*7,i*7+7).map(function(day){if(!day)return '<div class="spot-day"></div>';var record=days[day]||days[String(day)]||null,available=!!record&&record.available!==false,profit=Number((record||{}).profit||0),kind=profit>0?'pos':profit<0?'neg':'',amount=(profit>0?'+':'')+profit.toLocaleString('ko-KR',{maximumFractionDigits:0});return '<div class="spot-day '+kind+'"><b>'+day+'</b><span>'+(available?amount+'<small>KRW</small>':'-')+'</span></div>';}).join('')+'</div>';
     document.getElementById('stockCalendar').innerHTML=html;
-    var monthProfit=Object.keys(days).reduce(function(sum,key){var row=days[key]||{};return sum+(row.available===false?0:Number(row.profit||0));},0),yearProfit=0;
-    if(Number(performance.year||year)===year)Object.keys(byMonth).forEach(function(key){var rows=byMonth[key]||{};Object.keys(rows).forEach(function(day){var row=rows[day]||{};if(row.available!==false)yearProfit+=Number(row.profit||0);});});
-    document.getElementById('stockMonthTotal').textContent=performance.ready?money(monthProfit):'-';
-    document.getElementById('stockYearTotal').textContent=performance.ready?money(yearProfit):'-';
+    var monthProfit=0,monthBasis=0,yearProfit=0,yearBasis=0;
+    Object.keys(days).forEach(function(key){var row=days[key]||{};if(row.available!==false){monthProfit+=Number(row.profit||0);monthBasis+=Number(row.cost_basis||row.sell||0);}});
+    if(Number(performance.year||year)===year)Object.keys(byMonth).forEach(function(key){var rows=byMonth[key]||{};Object.keys(rows).forEach(function(day){var row=rows[day]||{};if(row.available!==false){yearProfit+=Number(row.profit||0);yearBasis+=Number(row.cost_basis||row.sell||0);}});});
+    var monthSummary=performance.month_summary||{},yearSummary=performance.year_summary||{};
+    var monthReturn=monthBasis>0?monthProfit/monthBasis*100:Number(monthSummary.return_pct||0),yearReturn=yearBasis>0?yearProfit/yearBasis*100:Number(yearSummary.return_pct||0);
+    document.getElementById('stockMonthTotal').textContent=performance.ready?(pct(monthReturn)+' · '+money(monthProfit)):'-';
+    document.getElementById('stockYearTotal').textContent=performance.ready?(pct(yearReturn)+' · '+money(yearProfit)):'-';
+    paint('stockMonthTotal',monthProfit||monthReturn);paint('stockYearTotal',yearProfit||yearReturn);
     document.getElementById('stockCalendarUpdated').textContent=window.selectedDomesticAccount+'계좌 '+(performance.ready?'집계 완료':'집계 중');
   }
   document.getElementById('stockPrevMonth').onclick=function(){var d=new Date(selection.year,selection.month-2,1);selection={year:d.getFullYear(),month:d.getMonth()+1};render()};
