@@ -413,6 +413,10 @@ body.mts-chart-open { overflow: hidden; }
 .spot-positive { color: var(--spot-profit) !important; }
 .spot-day.neg span,
 .spot-negative { color: var(--spot-loss) !important; }
+#coinCalendar { height: auto; min-height: 380px; grid-template-rows: auto repeat(6, minmax(52px, auto)); overflow: visible; }
+#coinCalendar .spot-week { min-height: 52px; }
+#coinCalendar .spot-day { min-height: 0; overflow: hidden; padding: 4px 2px; line-height: 1.1; }
+#coinCalendar .spot-day span { display: block; margin-top: 4px; font-size: 9px; line-height: 1.15; overflow-wrap: anywhere; }
 .spot-totals { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 9px; }
 .spot-tabs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 5px; }
 .spot-tabs button { height: 38px; margin: 0; padding: 0 3px; font-size: 11px; background: #193347; }
