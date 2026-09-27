@@ -412,8 +412,6 @@ body.mts-chart-open { overflow: hidden; }
 .spot-day b { display: block; font-size: 11px; line-height: 1.25; color: #bed9e8; }
 .spot-day span { display: block; white-space: nowrap; }
 .spot-day small { display: block; font-size: 9px; line-height: 1.15; color: inherit; }
-#coinCalendar .coin-real-start { display:block; margin:2px auto 0; width:max-content; max-width:100%; padding:2px 3px; border:1px solid rgba(53,215,255,.75); border-radius:5px; color:#65dcff; background:rgba(15,167,210,.16); font-size:8px; font-style:normal; font-weight:800; line-height:1; white-space:nowrap; }
-#coinCalendar .spot-day.coin-real-start-day { box-shadow:inset 0 0 0 1px rgba(53,215,255,.45); background:rgba(15,167,210,.08); }
 .spot-day.pos span,
 .spot-positive { color: var(--spot-profit) !important; }
 .spot-day.neg span,
@@ -751,7 +749,7 @@ body.spot-modal-open { overflow: hidden; }
 })();
 
 </script>
-<script id="coin-futures-calendar-v196">
+<script id="coin-futures-calendar-v364">
 (function () {
   'use strict';
   var page=document.getElementById('coin'), updated=document.getElementById('coinPerformanceUpdated');
@@ -760,7 +758,7 @@ body.spot-modal-open { overflow: hidden; }
   var card=document.createElement('section');
   card.className='card';
   card.id='coinFuturesCalendar';
-  card.innerHTML='<div class="sectionTitle"><h2>코인선물 수익 달력</h2><span id="coinCalendarUpdated" class="badge">집계 중</span></div><div class="spot-calendar-head"><button id="coinPrevMonth" class="ghost" type="button">‹</button><b id="coinCalendarTitle">-</b><button id="coinNextMonth" class="ghost" type="button">›</button></div><div id="coinCalendar" class="spot-calendar"></div><div class="spot-totals"><div class="kv"><span>월 누적</span><strong id="coinCalendarMonthTotal">-</strong></div><div class="kv"><span>연 누적</span><strong id="coinCalendarYearTotal">-</strong></div></div><div id="coinCalendarBasis" class="dangerNote">Binance 선물 LIVE 시작 이후 실현손익에 수수료와 펀딩비를 포함한 일별 순손익입니다.</div>';
+  card.innerHTML='<div class="sectionTitle"><h2>코인선물 수익 달력</h2><span id="coinCalendarUpdated" class="badge">집계 중</span></div><div class="spot-calendar-head"><button id="coinPrevMonth" class="ghost" type="button">‹</button><b id="coinCalendarTitle">-</b><button id="coinNextMonth" class="ghost" type="button">›</button></div><div id="coinCalendar" class="spot-calendar"></div><div class="spot-totals"><div class="kv"><span>월 누적</span><strong id="coinCalendarMonthTotal">-</strong></div><div class="kv"><span>연 누적</span><strong id="coinCalendarYearTotal">-</strong></div></div><div id="coinCalendarBasis" class="dangerNote">Binance 선물 체결 원장에서 복원한 실현손익에 수수료와 펀딩비를 포함한 일별 순손익입니다.</div>';
   anchor.insertAdjacentElement('afterend',card);
   var selection=null, performance={};
   function money(value){var n=Number(value||0);return(n>0?'+':'')+n.toLocaleString('ko-KR',{minimumFractionDigits:2,maximumFractionDigits:2})+' USDT'}
@@ -771,13 +769,8 @@ body.spot-modal-open { overflow: hidden; }
     if(!rows&&Number(performance.year)===year&&Number(performance.month)===month)rows=performance.days||{};
     return rows||{};
   }
-  function liveStart(){
-    var raw=String(performance.live_start_date||performance.report_start_date||'2026-09-14').slice(0,10);
-    var parts=raw.split('-'),year=Number(parts[0]),month=Number(parts[1]),day=Number(parts[2]);
-    return year&&month&&day?{raw:raw,date:new Date(year,month-1,day)}:{raw:'2026-09-14',date:new Date(2026,8,14)};
-  }
-  function inLivePeriod(year,month,day,today){
-    var date=new Date(year,month-1,day),start=liveStart().date;
+  function inHistoryPeriod(year,month,day,today){
+    var date=new Date(year,month-1,day),start=new Date(2026,7,1);
     return date>=start&&date<=today;
   }
   function periodTotal(year,onlyMonth,today){
@@ -787,7 +780,7 @@ body.spot-modal-open { overflow: hidden; }
       var rows=byMonth[monthKey]||{};
       Object.keys(rows).forEach(function(dayKey){
         var day=Number(dayKey),row=rows[dayKey]||{};
-        if(!day||row.available===false||!inLivePeriod(year,month,day,today))return;
+        if(!day||row.available===false||!inHistoryPeriod(year,month,day,today))return;
         profit+=Number(row.profit||0);factor*=1+Number(row.return_pct||0)/100;count+=1;
       });
     });
@@ -803,9 +796,9 @@ body.spot-modal-open { overflow: hidden; }
     for(i=0;i<6;i++)html+='<div class="spot-week">'+cells.slice(i*7,i*7+7).map(function(day){
       if(!day)return '<div class="spot-day"></div>';
       var record=rows[day]||rows[String(day)]||null,recordDate=new Date(year,month-1,day),today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
-      var start=liveStart(),available=!!record&&record.available!==false&&inLivePeriod(year,month,day,today),profit=Number((record||{}).profit||0),kind=available?(profit>0?'pos':profit<0?'neg':''):'',realStart=recordDate.getTime()===start.date.getTime();
+      var available=!!record&&record.available!==false&&inHistoryPeriod(year,month,day,today),profit=Number((record||{}).profit||0),kind=available?(profit>0?'pos':profit<0?'neg':''):'';
       var amount=(profit>0?'+':'')+profit.toLocaleString('ko-KR',{minimumFractionDigits:2,maximumFractionDigits:2});
-      return '<div class="spot-day '+kind+(realStart?' coin-real-start-day':'')+'"><b>'+day+'</b>'+(realStart?'<em class="coin-real-start">리얼스타트</em>':'')+'<span>'+(available?amount+'<small>USDT</small>':'-')+'</span></div>';
+      return '<div class="spot-day '+kind+'"><b>'+day+'</b><span>'+(available?amount+'<small>USDT</small>':'-')+'</span></div>';
     }).join('')+'</div>';
     document.getElementById('coinCalendar').innerHTML=html;
     var monthTotal=periodTotal(year,month,new Date(now.getFullYear(),now.getMonth(),now.getDate()));
@@ -814,7 +807,7 @@ body.spot-modal-open { overflow: hidden; }
     document.getElementById('coinCalendarMonthTotal').textContent=performance.ready&&monthTotal.count?(pct(monthReturn)+' · '+money(monthProfit)):'-';
     document.getElementById('coinCalendarYearTotal').textContent=performance.ready&&yearTotal.count?(pct(yearReturn)+' · '+money(yearProfit)):'-';
     document.getElementById('coinCalendarUpdated').textContent=performance.ready?'집계 완료':'집계 중';
-    document.getElementById('coinCalendarBasis').textContent='Binance 선물 LIVE '+liveStart().raw+' 시작 이후 실현손익에 수수료와 펀딩비를 포함한 일별 순손익입니다.';
+    document.getElementById('coinCalendarBasis').textContent='Binance 선물 체결 원장에서 2026-08-01부터 복원한 실현손익에 수수료와 펀딩비를 포함한 일별 순손익입니다.';
     paint('coinCalendarMonthTotal',monthProfit||monthReturn);paint('coinCalendarYearTotal',yearProfit||yearReturn);
   }
   document.getElementById('coinPrevMonth').onclick=function(){var d=new Date(selection.year,selection.month-2,1);selection={year:d.getFullYear(),month:d.getMonth()+1};render()};
