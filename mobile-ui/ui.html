@@ -749,7 +749,7 @@ body.spot-modal-open { overflow: hidden; }
 })();
 
 </script>
-<script id="coin-futures-calendar-v364">
+<script id="coin-futures-calendar-v366">
 (function () {
   'use strict';
   var page=document.getElementById('coin'), updated=document.getElementById('coinPerformanceUpdated');
@@ -758,7 +758,7 @@ body.spot-modal-open { overflow: hidden; }
   var card=document.createElement('section');
   card.className='card';
   card.id='coinFuturesCalendar';
-  card.innerHTML='<div class="sectionTitle"><h2>코인선물 수익 달력</h2><span id="coinCalendarUpdated" class="badge">집계 중</span></div><div class="spot-calendar-head"><button id="coinPrevMonth" class="ghost" type="button">‹</button><b id="coinCalendarTitle">-</b><button id="coinNextMonth" class="ghost" type="button">›</button></div><div id="coinCalendar" class="spot-calendar"></div><div class="spot-totals"><div class="kv"><span>월 누적</span><strong id="coinCalendarMonthTotal">-</strong></div><div class="kv"><span>연 누적</span><strong id="coinCalendarYearTotal">-</strong></div></div><div id="coinCalendarBasis" class="dangerNote">Binance 선물 체결 원장에서 복원한 실현손익에 수수료와 펀딩비를 포함한 일별 순손익입니다.</div>';
+  card.innerHTML='<div class="sectionTitle"><h2>코인선물 수익 달력</h2><span id="coinCalendarUpdated" class="badge">집계 중</span></div><div class="spot-calendar-head"><button id="coinPrevMonth" class="ghost" type="button">‹</button><b id="coinCalendarTitle">-</b><button id="coinNextMonth" class="ghost" type="button">›</button></div><div id="coinCalendar" class="spot-calendar"></div><div class="spot-totals"><div class="kv"><span>월 누적</span><strong id="coinCalendarMonthTotal">-</strong></div><div class="kv"><span>연 누적</span><strong id="coinCalendarYearTotal">-</strong></div></div><div id="coinCalendarBasis" class="dangerNote">Binance 선물 체결 원장의 2026-09-14 이후 실현손익에 수수료와 펀딩비를 포함한 일별 순손익입니다.</div>';
   anchor.insertAdjacentElement('afterend',card);
   var selection=null, performance={};
   function money(value){var n=Number(value||0);return(n>0?'+':'')+n.toLocaleString('ko-KR',{minimumFractionDigits:2,maximumFractionDigits:2})+' USDT'}
@@ -769,8 +769,12 @@ body.spot-modal-open { overflow: hidden; }
     if(!rows&&Number(performance.year)===year&&Number(performance.month)===month)rows=performance.days||{};
     return rows||{};
   }
+  function historyStart(){
+    var raw=String(performance.history_start_date||'2026-09-14').slice(0,10),parts=raw.split('-');
+    return {raw:raw,date:new Date(Number(parts[0]),Number(parts[1])-1,Number(parts[2]))};
+  }
   function inHistoryPeriod(year,month,day,today){
-    var date=new Date(year,month-1,day),start=new Date(2026,7,1);
+    var date=new Date(year,month-1,day),start=historyStart().date;
     return date>=start&&date<=today;
   }
   function periodTotal(year,onlyMonth,today){
@@ -807,7 +811,7 @@ body.spot-modal-open { overflow: hidden; }
     document.getElementById('coinCalendarMonthTotal').textContent=performance.ready&&monthTotal.count?(pct(monthReturn)+' · '+money(monthProfit)):'-';
     document.getElementById('coinCalendarYearTotal').textContent=performance.ready&&yearTotal.count?(pct(yearReturn)+' · '+money(yearProfit)):'-';
     document.getElementById('coinCalendarUpdated').textContent=performance.ready?'집계 완료':'집계 중';
-    document.getElementById('coinCalendarBasis').textContent='Binance 선물 체결 원장에서 2026-08-01부터 복원한 실현손익에 수수료와 펀딩비를 포함한 일별 순손익입니다.';
+    document.getElementById('coinCalendarBasis').textContent='Binance 선물 체결 원장의 '+historyStart().raw+' 이후 실현손익에 수수료와 펀딩비를 포함한 일별 순손익입니다.';
     paint('coinCalendarMonthTotal',monthProfit||monthReturn);paint('coinCalendarYearTotal',yearProfit||yearReturn);
   }
   document.getElementById('coinPrevMonth').onclick=function(){var d=new Date(selection.year,selection.month-2,1);selection={year:d.getFullYear(),month:d.getMonth()+1};render()};
