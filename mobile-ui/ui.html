@@ -572,6 +572,10 @@ body.spot-modal-open { overflow: hidden; }
   var snapshot = {};
   var activeTable = 'recent_orders';
   var calendarSelection = null;
+  try {
+    var savedSpotCalendarSelection=JSON.parse(localStorage.getItem('kswthSpotCalendarSelection')||'null');
+    if(savedSpotCalendarSelection&&Number(savedSpotCalendarSelection.year)&&Number(savedSpotCalendarSelection.month))calendarSelection={year:Number(savedSpotCalendarSelection.year),month:Number(savedSpotCalendarSelection.month)};
+  } catch(ignore) {}
   var pendingSpotChart = null;
   var schemas = {
     recent_orders: [['시간',['time','created_at','order_time']],['종목',['symbol','market']],['구분',['event_kind','action','type']],['역할',['role','leg','entry_leg']],['매수매도',['side']],['주문유형',['order_type']],['주문가',['order_price','price']],['체결가',['fill_price']],['주문수량',['order_qty','quantity','qty']],['체결수량',['filled_qty','executed_qty']],['잔량',['remaining_qty','remaining']],['상태',['status','state']],['소유',['ownership','owner','origin']]],
@@ -677,12 +681,12 @@ body.spot-modal-open { overflow: hidden; }
     calendarSelection={year:year,month:month}; setText('spotCalendarTitle',year+'년 '+String(month).padStart(2,'0')+'월');
     var first=new Date(year,month-1,1),last=new Date(year,month,0).getDate(),lead=(first.getDay()+6)%7,cells=[],i;
     for(i=0;i<lead;i++)cells.push(0);for(i=1;i<=last;i++)cells.push(i);while(cells.length<42)cells.push(0);
-    var byMonth=performance.days_by_month||{},days=byMonth[month]||byMonth[String(month)]||{};
+    var byMonth=performance.days_by_month||{},days=byMonth[month]||byMonth[String(month)]||{},reportStart=String(performance.report_start_date||'').slice(0,10);
     var html='<div class="spot-weekdays">'+['월','화','수','목','금','토','일'].map(function(day){return '<div class="spot-day">'+day+'</div>';}).join('')+'</div>';
-    for(i=0;i<6;i++)html+='<div class="spot-week">'+cells.slice(i*7,i*7+7).map(function(day){if(!day)return '<div class="spot-day"></div>';var record=days[day]||days[String(day)]||null,available=!!record&&record.available!==false,profit=Number((record||{}).profit||0),kind=profit>0?'pos':profit<0?'neg':'',amount=(profit>0?'+':'')+profit.toLocaleString('ko-KR',{maximumFractionDigits:0});return '<div class="spot-day '+kind+'"><b>'+day+'</b><span>'+(available?amount+'<small>KRW</small>':'-')+'</span></div>';}).join('')+'</div>';
+    for(i=0;i<6;i++)html+='<div class="spot-week">'+cells.slice(i*7,i*7+7).map(function(day){if(!day)return '<div class="spot-day"></div>';var record=days[day]||days[String(day)]||null,dayKey=year+'-'+String(month).padStart(2,'0')+'-'+String(day).padStart(2,'0'),available=!!record&&record.available!==false&&(!reportStart||dayKey>=reportStart),profit=Number((record||{}).profit||0),kind=profit>0?'pos':profit<0?'neg':'',amount=(profit>0?'+':'')+profit.toLocaleString('ko-KR',{maximumFractionDigits:0});return '<div class="spot-day '+kind+'"><b>'+day+'</b><span>'+(available?amount+'<small>KRW</small>':'-')+'</span></div>';}).join('')+'</div>';
     node('spotCalendar').innerHTML=html;
-    var monthly=performance.monthly||{},record=monthly[month]||monthly[String(month)]||{},monthReturn=Number(record.cumulative_return_pct||record.return_pct||0),yearReturn=Number(performance.year_return_pct||0);
-    var monthProfit=Number(record.cumulative_profit||record.profit||0),yearProfit=Number(performance.year_profit||0);
+    var monthly=performance.monthly||{},record=monthly[month]||monthly[String(month)]||{},monthReturn=Number(record.return_pct||0),yearReturn=Number(performance.year_return_pct||0);
+    var monthProfit=Number(record.profit||0),yearProfit=Number(performance.year_profit||0);
     setText('spotMonthTotal',(monthReturn>=0?'+':'')+monthReturn.toFixed(2)+'% · '+compact(monthProfit)+' KRW');
     setText('spotYearTotal',(yearReturn>=0?'+':'')+yearReturn.toFixed(2)+'% · '+compact(yearProfit)+' KRW');
     paintSigned('spotMonthTotal',monthProfit!==0?monthProfit:monthReturn);
@@ -690,7 +694,7 @@ body.spot-modal-open { overflow: hidden; }
     setText('spotCalendarUpdated',performance.ready?'집계 완료':'집계 중');
   }
 
-  function shiftMonth(offset) { var current=calendarSelection||{year:new Date().getFullYear(),month:new Date().getMonth()+1}, date=new Date(current.year,current.month-1+offset,1);calendarSelection={year:date.getFullYear(),month:date.getMonth()+1};renderCalendar(); }
+  function shiftMonth(offset) { var current=calendarSelection||{year:new Date().getFullYear(),month:new Date().getMonth()+1}, date=new Date(current.year,current.month-1+offset,1);calendarSelection={year:date.getFullYear(),month:date.getMonth()+1};try{localStorage.setItem('kswthSpotCalendarSelection',JSON.stringify(calendarSelection));}catch(ignore){}renderCalendar(); }
   function clearLive() {
     ['spotApiConnected','spotRecovery','spotHeartbeat','spot4h','spotBalanceSync','spotOrdersSync','spotFillsSync','spotEntryState','spotBtcMode'].forEach(function(id){setText(id,'-');});
     node('spotSummary').innerHTML='<div class="empty">PC 최신 상태 없음</div>';node('spotTableV2').className='spot-table empty';node('spotTableV2').textContent='연결 끊김 · 추정값을 표시하지 않습니다.';
@@ -842,8 +846,8 @@ body.spot-modal-open { overflow: hidden; }
     for(i=0;i<6;i++)html+='<div class="spot-week">'+cells.slice(i*7,i*7+7).map(function(day){if(!day)return '<div class="spot-day"></div>';var record=days[day]||days[String(day)]||null,available=!!record&&record.available!==false,profit=Number((record||{}).profit||0),kind=profit>0?'pos':profit<0?'neg':'',amount=(profit>0?'+':'')+profit.toLocaleString('ko-KR',{maximumFractionDigits:0});return '<div class="spot-day '+kind+'"><b>'+day+'</b><span>'+(available?amount+'<small>KRW</small>':'-')+'</span></div>';}).join('')+'</div>';
     document.getElementById('stockCalendar').innerHTML=html;
     var monthProfit=0,monthBasis=0,yearProfit=0,yearBasis=0;
-    Object.keys(days).forEach(function(key){var row=days[key]||{};if(row.available!==false){monthProfit+=Number(row.profit||0);monthBasis+=Number(row.cost_basis||row.sell||0);}});
-    if(Number(performance.year||year)===year)Object.keys(byMonth).forEach(function(key){var rows=byMonth[key]||{};Object.keys(rows).forEach(function(day){var row=rows[day]||{};if(row.available!==false){yearProfit+=Number(row.profit||0);yearBasis+=Number(row.cost_basis||row.sell||0);}});});
+    Object.keys(days).forEach(function(key){var row=days[key]||{};if(row.available!==false){monthProfit+=Number(row.profit||0);monthBasis+=Number(row.cost_basis||row.buy||row.sell||0);}});
+    if(Number(performance.year||year)===year)Object.keys(byMonth).forEach(function(key){var rows=byMonth[key]||{};Object.keys(rows).forEach(function(day){var row=rows[day]||{};if(row.available!==false){yearProfit+=Number(row.profit||0);yearBasis+=Number(row.cost_basis||row.buy||row.sell||0);}});});
     var monthSummary=performance.month_summary||{},yearSummary=performance.year_summary||{};
     var monthReturn=monthBasis>0?monthProfit/monthBasis*100:Number(monthSummary.return_pct||0),yearReturn=yearBasis>0?yearProfit/yearBasis*100:Number(yearSummary.return_pct||0);
     document.getElementById('stockMonthTotal').textContent=performance.ready?(pct(monthReturn)+' · '+money(monthProfit)):'-';
