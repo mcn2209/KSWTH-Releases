@@ -883,6 +883,11 @@ body.spot-modal-open { overflow: hidden; }
     homeSingle.innerHTML='<div class="marketSummaryHead"><b>코인선물 · SINGLE · ETHUSDT</b><strong id="homeEthSingle">-</strong></div><div class="marketRows"><div class="marketLine"><span>엔진</span><strong>BINANCE_ETH_SINGLE</strong></div><div class="marketLine"><span>가용 USDT</span><strong id="homeEthEquity">-</strong></div><div class="marketLine"><span>현재 포지션</span><strong id="homeEthPosition">-</strong></div><div class="marketLine"><span>heartbeat</span><strong id="homeEthHeartbeat">-</strong></div></div>';
     homeGrid.appendChild(homeSingle);
   }
+  // 홈 운용 현황은 국장 → MULTI → SINGLE → 빗썸 순서로 고정한다.
+  // appendChild는 기존 카드를 재생성하지 않고 위치만 마지막으로 이동한다.
+  var homeSpotSummary=document.getElementById('homeSpot');
+  var homeSpotCard=homeSpotSummary&&homeSpotSummary.closest('.marketSummary');
+  if(homeGrid&&homeSpotCard)homeGrid.appendChild(homeSpotCard);
   var multi=document.createElement('div');multi.id='coinMultiRoot';multi.className='coin-multi-root';
   Array.prototype.slice.call(page.children).forEach(function(node){multi.appendChild(node)});
   var selector=document.createElement('div');selector.id='coinFuturesModeSwitch';selector.className='eth-mode-switch';
