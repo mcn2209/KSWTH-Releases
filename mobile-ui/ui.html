@@ -99,6 +99,12 @@ function startSyncProgress(silent, options) {
     syncPaint(5, startLabel, '');
     syncTimer = setInterval(function () {
         var elapsed = Date.now() - syncStarted;
+        if (elapsed >= syncTotalTimeoutMs) {
+            var timedOutMode = syncProgressMode;
+            finishSyncProgress(false, timedOutMode === 'pc' ? 'PC 런타임 갱신 응답 시간 초과 · 다시 시도 가능' : 'MTS 응답 시간 초과 · 다시 시도 가능');
+            if (timedOutMode !== 'pc' && typeof autoSyncFailed === 'function') autoSyncFailed();
+            return;
+        }
         var ratio = Math.min(1, elapsed / syncTotalTimeoutMs);
         var progressBase = syncProgressMode === 'pc' ? 25 : 5;
         var p = progressBase + (Math.pow(ratio, 0.75) * (98-progressBase));
