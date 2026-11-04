@@ -182,6 +182,14 @@ window.kswthStatus=function(t,ok){
         finishSyncProgress(false,t);
     }
 };
+var baseDuplicateMtsStatus=window.kswthStatus;
+window.kswthStatus=function(t,ok){
+    baseDuplicateMtsStatus(t,ok);
+    if(!ok && /MTS 요청이 이미 진행 중/.test(t)){
+        finishSyncProgress(false,'이전 MTS 요청 종료 대기 · 자동 재시도');
+        autoSyncFailed();
+    }
+};
 window.kswthWorkSent=function(){el('workText').value=''};
 window.kswthWorkResponse=function(id,text){let b=document.createElement('div');b.className='response';b.textContent='답변 · '+id+'\n'+text;el('responses').prepend(b)};
 window.kswthHistoryItem=function(id,req,res,status){let b=document.createElement('div');b.className='response';b.textContent='나 · '+id+' ['+status+']\n'+req+(res?'\n\nCodex\n'+res:'');el('responses').appendChild(b)};
